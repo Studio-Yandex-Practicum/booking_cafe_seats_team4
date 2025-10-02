@@ -2,7 +2,13 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    field_validator,
+    model_validator,
+)
 
 
 class UserRole(IntEnum):
@@ -17,10 +23,17 @@ class UserCreate(BaseModel):
     """Схема создания пользователя."""
 
     username: str
-    email: EmailStr
-    phone: str
-    tg_id: str
+    # хотя бы одно из двух (валидируем ниже)
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    tg_id: Optional[str] = None
     password: str
+
+    @model_validator(mode='after')
+    def _require_contact(self) -> 'UserCreate':
+        if not (self.email or self.phone):
+            raise ValueError('Нужно указать email или phone (хотя бы одно).')
+        return self
 
 
 class UserShortInfo(BaseModel):
@@ -29,9 +42,9 @@ class UserShortInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     username: str
-    email: EmailStr
-    phone: str
-    tg_id: str
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    tg_id: Optional[str] = None
 
 
 class UserInfo(BaseModel):
@@ -40,9 +53,9 @@ class UserInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     username: str
-    email: EmailStr
-    phone: str
-    tg_id: str
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    tg_id: Optional[str] = None
     role: UserRole
     is_active: bool
     created_at: datetime
@@ -59,19 +72,18 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     password: Optional[str] = None
 
-
-@field_validator(
-    'username',
-    'email',
-    'phone',
-    'tg_id',
-    'role',
-    'password',
-    mode='before',
-)
-@classmethod
-def forbid_nulls(cls: type['UserUpdate'], v: object) -> object:
-    """Запретить явный null/None в полях partial-update."""
-    if v is None:
-        raise ValueError('null is not allowed for this field')
-    return v
+    @field_validator(
+        'username',
+        'email',
+        'phone',
+        'tg_id',
+        'role',
+        'password',
+        mode='before',
+    )
+    @classmethod
+    def forbid_nulls(cls, v: object) -> object:
+        """Валидатор, запрещающий использование значения None."""
+        if v is None:
+            raise ValueError('null is not allowed for this field')
+        return v
