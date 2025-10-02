@@ -1,8 +1,8 @@
 from typing import Iterable
 
-from app.auth.security import hash_password
-from app.users.models import User
-from app.users.schemas import UserUpdate
+from app.core.security import hash_password
+from app.models.user import User
+from app.schemas.user import UserUpdate
 
 _MUTABLE_FIELDS: Iterable[str] = (
     'username',

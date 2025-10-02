@@ -43,7 +43,7 @@ if not database_url:
 config.set_main_option('sqlalchemy.url', database_url)
 
 # Metadata
-from app.db.base import Base  # noqa: E402
+from app.models.base import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
