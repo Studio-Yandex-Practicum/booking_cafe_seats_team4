@@ -1,6 +1,5 @@
-from sqlalchemy import Column, ForeignKey, Integer, DateTime
-
 from app.models.base import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer
 
 
 class Slots(Base):
