@@ -29,6 +29,15 @@ class UserCreate(BaseModel):
     tg_id: Optional[str] = None
     password: str
 
+    # Зарещаем пустых строк для контактов и tg_id.
+    @field_validator('email', 'phone', 'tg_id', mode='before')
+    @classmethod
+    def _no_blank(cls, v: object) -> object:
+        if isinstance(v, str) and v.strip() == '':
+            raise ValueError('Поле не должно быть пустой строкой.')
+        return v
+
+    # Запрашиваем хотя бы один контакт.
     @model_validator(mode='after')
     def _require_contact(self) -> 'UserCreate':
         if not (self.email or self.phone):
@@ -72,6 +81,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     password: Optional[str] = None
 
+    # Запрещаем  null в частичном апдейте (по ТЗ).
     @field_validator(
         'username',
         'email',
@@ -83,7 +93,22 @@ class UserUpdate(BaseModel):
     )
     @classmethod
     def forbid_nulls(cls, v: object) -> object:
-        """Валидатор, запрещающий использование значения None."""
+        """Валидация, что не null."""
         if v is None:
             raise ValueError('null is not allowed for this field')
+        return v
+
+    # Плюс запрешаем пустые строки в апдейте.
+    @field_validator(
+        'username',
+        'email',
+        'phone',
+        'tg_id',
+        'password',
+        mode='before',
+    )
+    @classmethod
+    def _no_blank(cls, v: object) -> object:
+        if isinstance(v, str) and v.strip() == '':
+            raise ValueError('Пустые строки не допускаются.')
         return v
