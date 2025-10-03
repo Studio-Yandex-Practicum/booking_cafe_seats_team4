@@ -22,7 +22,7 @@ class ActionUpdate(BaseModel):
 
 class ActionOut(BaseModel):
     """Схема ответа по акции."""
-    
+
     id: int
     description: str
     photo_id: UUID | None = None
