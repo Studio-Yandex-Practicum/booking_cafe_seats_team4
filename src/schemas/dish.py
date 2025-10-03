@@ -1,6 +1,6 @@
+from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
-from decimal import Decimal
 
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict

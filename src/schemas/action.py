@@ -6,6 +6,7 @@ from pydantic.config import ConfigDict
 
 class ActionCreate(BaseModel):
     """Схема создания акции."""
+
     description: str
     photo_id: UUID | None = None
     cafe_ids: list[int] = []
@@ -13,6 +14,7 @@ class ActionCreate(BaseModel):
 
 class ActionUpdate(BaseModel):
     """Схема частичного обновления акции."""
+
     description: str | None = None
     photo_id: UUID | None = None
     cafe_ids: list[int] | None = None
@@ -20,6 +22,7 @@ class ActionUpdate(BaseModel):
 
 class ActionOut(BaseModel):
     """Схема ответа по акции."""
+    
     id: int
     description: str
     photo_id: UUID | None = None
