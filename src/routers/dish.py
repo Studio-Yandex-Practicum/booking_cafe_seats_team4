@@ -1,11 +1,12 @@
 from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_session
 from src.models.dish import Dish
-from src.schemas.dish import DishCreate, DishUpdate, DishOut
+from src.schemas.dish import DishCreate, DishOut, DishUpdate
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])
 
@@ -15,6 +16,7 @@ async def create_dish(
     data: DishCreate,
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
+    """Создать новое блюдо."""
     dish = Dish(**data.dict())
     session.add(dish)
     await session.commit()
@@ -34,6 +36,7 @@ async def list_dishes(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=200),
 ) -> list[DishOut]:
+    """Список блюд с фильтрами по кафе, названию, цене и доступности."""
     stmt = select(Dish)
     if cafe_id is not None:
         stmt = stmt.where(Dish.cafe_id == cafe_id)
@@ -57,6 +60,7 @@ async def get_dish(
     dish_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
+    """Получить блюдо по ID."""
     dish = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
@@ -69,6 +73,7 @@ async def update_dish(
     data: DishUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
+    """Частично обновить блюдо по ID."""
     dish = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
@@ -86,9 +91,10 @@ async def delete_dish(
     dish_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> None:
+    """Мягкое удаление блюда (active=False)."""
     dish = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
+
     dish.active = False
     await session.commit()
-    return None

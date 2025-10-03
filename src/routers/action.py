@@ -5,12 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.session import get_session
 from src.models.action import Action
 from src.models.cafe import Cafe
-from src.schemas.action import ActionCreate, ActionUpdate, ActionOut
+from src.schemas.action import ActionCreate, ActionOut, ActionUpdate
 
 router = APIRouter(prefix="/actions", tags=["actions"])
 
 
 def to_out(a: Action) -> ActionOut:
+    """Собрать ActionOut из ORM-модели с перечислением cafe_ids."""
     return ActionOut(
         id=a.id,
         description=a.description,
@@ -24,14 +25,18 @@ async def create_action(
     data: ActionCreate,
     session: AsyncSession = Depends(get_session),
 ) -> ActionOut:
+    """Создать акцию и (опционально) привязать к списку кафе."""
     action = Action(description=data.description, photo_id=data.photo_id)
 
     if data.cafe_ids:
-        cafes = (await session.execute(
-            select(Cafe).where(Cafe.id.in_(data.cafe_ids))
-        )).scalars().all()
+        cafes = (
+            await session.execute(
+                select(Cafe).where(Cafe.id.in_(data.cafe_ids)),
+            )
+        ).scalars().all()
         if len(cafes) != len(set(data.cafe_ids)):
-            raise HTTPException(400, "Некоторые cafe_id не найдены")
+            raise HTTPException(
+                status_code=400, detail="Некоторые cafe_id не найдены")
         action.cafes = cafes
 
     session.add(action)
@@ -48,6 +53,7 @@ async def list_actions(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=200),
 ) -> list[ActionOut]:
+    """Список акций с фильтрами по cafe_id и подстроке в описании."""
     stmt = select(Action)
     if q:
         stmt = stmt.where(Action.description.ilike(f"%{q}%"))
@@ -64,10 +70,11 @@ async def get_action(
     action_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> ActionOut:
+    """Получить акцию по ID."""
     action = await session.get(Action, action_id)
     if not action:
-        raise HTTPException(404, "Action not found")
-    _ = getattr(action, "cafes", [])
+        raise HTTPException(status_code=404, detail="Action not found")
+    _ = getattr(action, "cafes", [])  # прогрузить связь, если лениво
     return to_out(action)
 
 
@@ -77,9 +84,10 @@ async def update_action(
     data: ActionUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> ActionOut:
+    """Частично обновить акцию."""
     action = await session.get(Action, action_id)
     if not action:
-        raise HTTPException(404, "Action not found")
+        raise HTTPException(status_code=404, detail="Action not found")
 
     payload = data.dict(exclude_unset=True)
 
@@ -89,11 +97,14 @@ async def update_action(
         action.photo_id = payload["photo_id"]
 
     if "cafe_ids" in payload and payload["cafe_ids"] is not None:
-        cafes = (await session.execute(
-            select(Cafe).where(Cafe.id.in_(payload["cafe_ids"]))
-        )).scalars().all()
+        cafes = (
+            await session.execute(
+                select(Cafe).where(Cafe.id.in_(payload["cafe_ids"])),
+            )
+        ).scalars().all()
         if len(cafes) != len(set(payload["cafe_ids"])):
-            raise HTTPException(400, "Некоторые cafe_id не найдены")
+            raise HTTPException(
+                status_code=400, detail="Некоторые cafe_id не найдены")
         action.cafes = cafes
 
     await session.commit()
@@ -106,10 +117,10 @@ async def delete_action(
     action_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> None:
+    """Удалить акцию (жёстко)."""
     action = await session.get(Action, action_id)
     if not action:
-        raise HTTPException(404, "Action not found")
+        raise HTTPException(status_code=404, detail="Action not found")
 
     await session.delete(action)
     await session.commit()
-    return None

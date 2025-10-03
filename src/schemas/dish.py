@@ -1,6 +1,6 @@
-from decimal import Decimal
-from uuid import UUID
 from typing import Annotated
+from uuid import UUID
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
@@ -13,6 +13,7 @@ NameStr = Annotated[str, Field(min_length=1, max_length=200)]
 
 class DishBase(BaseModel):
     """Базовая схема блюда."""
+
     cafe_id: PositiveInt
     name: NameStr
     price: Money
@@ -24,11 +25,13 @@ class DishBase(BaseModel):
 
 class DishCreate(DishBase):
     """Создание блюда."""
+
     pass
 
 
 class DishUpdate(BaseModel):
     """Частичное обновление блюда."""
+
     name: NameStr | None = None
     price: Money | None = None
     description: str | None = None
@@ -39,5 +42,6 @@ class DishUpdate(BaseModel):
 
 class DishOut(DishBase):
     """Ответ с блюдом."""
+
     id: int
     model_config = ConfigDict(from_attributes=True)
