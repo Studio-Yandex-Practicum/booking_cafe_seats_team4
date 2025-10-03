@@ -3,7 +3,7 @@ from datetime import datetime, date
 from enum import IntEnum
 from pydantic import BaseModel, validator
 
-from validators import validate_date_not_past, validate_positive_number
+from .validators import validate_date_not_past, validate_positive_number
 
 
 class BookingStatus(IntEnum):
@@ -44,7 +44,7 @@ class BookingUpdate(BaseModel):
     status: Optional[BookingStatus] = None
     note: Optional[str] = None
     is_active: Optional[bool] = None
-    
+
     @validator('booking_date')
     def validate_booking_date_not_in_past(cls, booking_date):
         if booking_date is not None:
@@ -56,6 +56,7 @@ class BookingUpdate(BaseModel):
         if guest_count is not None:
             return validate_positive_number(guest_count, "Количество гостей")
         return guest_count
+
 
 class BookingShortInfo(BaseModel):
     id: int

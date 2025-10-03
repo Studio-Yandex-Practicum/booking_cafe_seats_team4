@@ -4,6 +4,7 @@ from pydantic import BaseModel, constr, validator
 
 from validators import validate_time_format, validate_time_range
 
+
 class TimeSlotBase(BaseModel):
     cafe_id: int
     start_time: constr(min_length=5, max_length=5)
@@ -20,6 +21,7 @@ class TimeSlotBase(BaseModel):
             start_time = values['start_time']
             validate_time_range(start_time, end_time)
         return end_time
+
 
 class TimeSlotCreate(TimeSlotBase):
     pass

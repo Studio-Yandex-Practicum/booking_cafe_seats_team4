@@ -22,6 +22,18 @@ class Booking(BaseModel):
 
     user = relationship('User', back_populates='bookings')
     cafe = relationship('Cafe', back_populates='bookings')
-    tables = relationship('Table', secondary='booking_tables', back_populates='bookings')
-    slots = relationship('Slot', secondary='booking_slots', back_populates='bookings')
-    dishes = relationship('Dish', secondary='booking_dishes', back_populates='bookings')
+    tables = relationship(
+        'Table',
+        secondary='booking_tables',
+        back_populates='bookings'
+    )
+    slots = relationship(
+        'Slot',
+        secondary='booking_slots',
+        back_populates='bookings'
+    )
+    dishes = relationship(
+        'Dish',
+        secondary='booking_dishes',
+        back_populates='bookings'
+    )

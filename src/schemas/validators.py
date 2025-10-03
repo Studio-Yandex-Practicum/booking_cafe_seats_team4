@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Optional
 
 
 def validate_date_not_past(booking_date: date) -> date:
