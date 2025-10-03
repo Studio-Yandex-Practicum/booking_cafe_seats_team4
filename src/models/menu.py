@@ -1,7 +1,10 @@
+class Dish:
+    """Модель Блюдо."""
 
-class Dish():
     pass
 
 
-class Action():
+class Action:
+    """Модель Акция."""
+
     pass

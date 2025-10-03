@@ -1,11 +1,6 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    ForeignKey,
-    Table,
-)
-from models.base import Base
+from sqlalchemy import Column, ForeignKey, Integer, Table
 
+from models.base import Base
 
 # Связь: Кафе <-> Менеджеры (User)
 cafe_manager = Table(

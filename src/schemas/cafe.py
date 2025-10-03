@@ -8,6 +8,8 @@ from .user import UserShortInfo
 
 
 class CafeBase(BaseModel):
+    """Базовая схема Кафе."""
+
     name: str = Field(..., max_length=200)
     address: str
     phone: str = Field(..., max_length=20)
@@ -16,10 +18,14 @@ class CafeBase(BaseModel):
 
 
 class CafeCreate(CafeBase):
+    """Схема создания Кафе."""
+
     managers_id: List[int]
 
 
 class CafeUpdate(BaseModel):
+    """Схема обновления Кафе."""
+
     name: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
@@ -30,6 +36,8 @@ class CafeUpdate(BaseModel):
 
 
 class CafeShortInfo(BaseModel):
+    """Краткая информация о Кафе."""
+
     id: int
     name: str
     address: str
@@ -38,10 +46,14 @@ class CafeShortInfo(BaseModel):
     photo_id: Optional[UUID] = None
 
     class Config:
+        """Конфигурация схемы."""
+
         orm_mode = True
 
 
 class CafeInfo(CafeShortInfo):
+    """Полная информация о Кафе."""
+
     managers: List[UserShortInfo]
     is_active: bool
     created_at: datetime
@@ -49,15 +61,21 @@ class CafeInfo(CafeShortInfo):
 
 
 class TableBase(BaseModel):
+    """Базовая схема Стола."""
+
     description: Optional[str] = None
     seat_number: int
 
 
 class TableCreate(TableBase):
+    """Схема создания Стола."""
+
     cafe_id: int
 
 
 class TableUpdate(BaseModel):
+    """Схема обновления Стола."""
+
     cafe_id: Optional[int] = None
     description: Optional[str] = None
     seat_number: Optional[int] = None
@@ -65,15 +83,21 @@ class TableUpdate(BaseModel):
 
 
 class TableShortInfo(BaseModel):
+    """Краткая информация о Столе."""
+
     id: int
     description: Optional[str] = None
     seat_number: int
 
     class Config:
+        """Конфигурация схемы."""
+
         orm_mode = True
 
 
 class TableInfo(TableShortInfo):
+    """Полная информация о Столе."""
+
     cafe: CafeShortInfo
     is_active: bool
     created_at: datetime
