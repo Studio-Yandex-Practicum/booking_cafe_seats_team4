@@ -16,6 +16,8 @@ from src.models.base import Base
 
 
 class Dish(Base):
+    """Модель блюда в меню кафе."""
+
     __tablename__ = "dishes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -37,5 +39,5 @@ class Dish(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
     )
