@@ -1,4 +1,4 @@
-"""check move base to app.models (no-op)."""
+"""check move base to models (no-op)."""
 
 from typing import Sequence, Union
 

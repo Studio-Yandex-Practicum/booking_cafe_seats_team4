@@ -4,7 +4,7 @@ from typing import Any, Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from app.core.config import settings
+from core.config import settings
 
 _pwd_ctx = CryptContext(schemes=['bcrypt'], deprecated='auto')
 

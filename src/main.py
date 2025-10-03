@@ -3,7 +3,7 @@
 Проверка, что всё собрано и работает.
 """
 
-from app.core.logging import get_logger, setup_logging
+from core.logging import get_logger, setup_logging
 
 
 def main() -> None:
