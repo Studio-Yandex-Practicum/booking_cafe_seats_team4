@@ -32,9 +32,13 @@ class Dish(Base):
         Boolean, default=True, nullable=False)
     media_id: Mapped[str | None] = mapped_column(UUID(as_uuid=True))
 
-    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow
+        DateTime(timezone=True),
+        default=datetime.utcnow,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
