@@ -1,65 +1,64 @@
-from __future__ import annotations
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import relationship
 
-from models.base import Base
-from models.cafe_manager import cafe_manager
-
-if TYPE_CHECKING:
-    from models.cafe import Cafe
+from src.core.constants import (
+    CK_USERS_CONTACT_REQUIRED,
+    EMAIL_MAX,
+    PASSWORD_HASH_MAX,
+    PHONE_MAX,
+    TG_ID_MAX,
+    USERNAME_MAX,
+)
+from src.models.base import Base
+from src.models.cafe_manager import cafe_manager
+from src.schemas.user import UserRole  # IntEnum (USER=0, MANAGER=1, ADMIN=2)
 
 
 class User(Base):
-    """ORM-модель пользователя."""
+    """ORM-модель пользователя (classic Column API)."""
 
     __tablename__ = 'users'
-    # Еmail ИЛИ phone обязательно
     __table_args__ = (
+        # обязательно указан email ИЛИ phone
         CheckConstraint(
             '(email IS NOT NULL) OR (phone IS NOT NULL)',
-            name='ck_users_contact_required',
+            name=CK_USERS_CONTACT_REQUIRED,
         ),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(USERNAME_MAX), nullable=False)
+    email = Column(String(EMAIL_MAX), nullable=True)
+    phone = Column(String(PHONE_MAX), nullable=True)
+    tg_id = Column(String(TG_ID_MAX), nullable=True)
+    role = Column(Integer, nullable=False, default=int(UserRole.USER))
+    is_active = Column('active', Boolean, nullable=False, default=True)
 
-    username: Mapped[str] = mapped_column(String(150), nullable=False)
-
-    # Хотя бы одно из (email, phone) должно быть заполнено
-    email: Mapped[Optional[str]] = mapped_column(String(254), nullable=True)
-    phone: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    tg_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-
-    # enum 0/1/2 (по OpenAPI)
-    role: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    is_active: Mapped[bool] = mapped_column(
-        'active',
-        Boolean,
-        nullable=False,
-        default=True,
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
+    created_at = Column(
         DateTime(timezone=True),
         nullable=False,
         default=datetime.utcnow,
     )
-    updated_at: Mapped[datetime] = mapped_column(
+    updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
 
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash = Column(String(PASSWORD_HASH_MAX), nullable=False)
 
-    # Менеджер - Кафе (many-to-many) через cafe_manager
-    managed_cafes: Mapped[list[Cafe]] = relationship(
+    # many-to-many с кафе
+    managed_cafes = relationship(
         'Cafe',
         secondary=cafe_manager,
         back_populates='managers',

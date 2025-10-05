@@ -4,18 +4,18 @@ from typing import Any, Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from core.config import settings
+from src.core.config import settings
 
-_pwd_ctx = CryptContext(schemes=['bcrypt'], deprecated='auto')
+_pwd_ctx = CryptContext(schemes=['bcrypt_sha256'], deprecated='auto')
 
 
 def hash_password(password: str) -> str:
-    """Вернуть bcrypt-хеш для заданного пароля."""
+    """Вернуть хэш для заданного пароля (bcrypt_sha256)."""
     return _pwd_ctx.hash(password)
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    """Вернуть bcrypt-хеш для заданного пароля."""
+    """Проверить соответствие пароля его хэшу (bcrypt_sha256)."""
     return _pwd_ctx.verify(plain_password, password_hash)
 
 
@@ -38,10 +38,17 @@ def create_access_token(
     return jwt.encode(payload, settings.SECRET, algorithm=settings.JWT_ALGO)
 
 
-def decode_token(token: str) -> dict[str, Any]:
-    """Декодировать JWT и вернуть payload."""
-    return jwt.decode(token, settings.SECRET, algorithms=[settings.JWT_ALGO])
-
-
 class TokenError(JWTError):
     """Общий класс ошибок токена для унификации обработки."""
+
+
+def decode_token(token: str) -> dict[str, Any]:
+    """Декодировать JWT и вернуть payload."""
+    try:
+        return jwt.decode(
+            token,
+            settings.SECRET,
+            algorithms=[settings.JWT_ALGO],
+        )
+    except JWTError as exc:
+        raise TokenError(str(exc)) from exc

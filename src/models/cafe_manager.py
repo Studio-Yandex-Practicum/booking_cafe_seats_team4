@@ -1,12 +1,20 @@
-from sqlalchemy import Column, Integer, Table, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, Table
 
-from models.base import Base
+from src.models.base import Base
 
-# временная таблица-связка без внешних ключей
 cafe_manager = Table(
     'cafe_manager',
     Base.metadata,
-    Column('cafe_id', Integer, primary_key=True),
-    Column('user_id', Integer, primary_key=True),
-    UniqueConstraint('cafe_id', 'user_id', name='uq_cafe_manager_cafe_user'),
+    Column(
+        'cafe_id',
+        Integer,
+        ForeignKey('cafes.id', ondelete='CASCADE'),
+        primary_key=True,
+    ),
+    Column(
+        'user_id',
+        Integer,
+        ForeignKey('users.id', ondelete='CASCADE'),
+        primary_key=True,
+    ),
 )

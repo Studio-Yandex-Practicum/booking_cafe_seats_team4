@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import sys
@@ -11,19 +13,18 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-# Alembic config
+# Базовая настройка
 config = context.config
 
-# Логирование Alembic из alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# ENV / DATABASE_URL
+# Корень проекта и PYTHONPATH
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-sys.path.append(str(PROJECT_ROOT / 'src'))
-
-
+# ENV / DATABASE_URL
 load_dotenv(PROJECT_ROOT / 'infra' / '.env')
 load_dotenv(PROJECT_ROOT / '.env')
 load_dotenv()
@@ -39,18 +40,21 @@ if not database_url:
         f'postgresql+asyncpg://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}'
     )
 
-# Переопределяем URL в конфиге Alembic
+# Побрасываем URL в конфиг Alembic
 config.set_main_option('sqlalchemy.url', database_url)
 
-# Metadata
-from models.base import Base  # noqa: E402
+# Модели / metadata
+import src.models.cafe  # noqa: F401,E402
+import src.models.cafe_manager  # noqa: F401,E402
+import src.models.user  # noqa: F401,E402
+from src.models.base import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
 
-# Offline migrations
+# ---------- Offline ----------
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode'."""
+    """Run migrations in 'offline' mode."""
     url = config.get_main_option('sqlalchemy.url')
     context.configure(
         url=url,
@@ -62,7 +66,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-# Online migrations
+# Online
 def do_run_migrations(connection: Connection) -> None:
     """Configure context and run migrations in a single transaction."""
     context.configure(connection=connection, target_metadata=target_metadata)
@@ -83,7 +87,7 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    """Entry point for running online (async) migrations."""
+    """Запускает онлайн-миграции через asyncio."""
     asyncio.run(run_async_migrations())
 
 

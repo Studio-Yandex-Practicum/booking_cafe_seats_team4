@@ -1,21 +1,22 @@
 from typing import Iterable
 
-from core.security import hash_password
-from models.user import User
-from schemas.user import UserUpdate
+from src.core.security import hash_password
+from src.models.user import User
+from src.schemas.user import UserUpdate
 
+# Поля, которые можно обновлять через UserUpdate.
+# (is_active НЕ входит в UserUpdate по спеке!)
 _MUTABLE_FIELDS: Iterable[str] = (
     'username',
     'email',
     'phone',
     'tg_id',
     'role',
-    'is_active',
 )
 
 
 def apply_user_update(entity: User, update: UserUpdate) -> None:
-    """Применить partial-обновление к User, включая смену пароля."""
+    """Частичное обновление к User, включая смену пароля."""
     data = update.model_dump(exclude_unset=True, exclude_none=True)
     if 'password' in data:
         entity.password_hash = hash_password(data.pop('password'))

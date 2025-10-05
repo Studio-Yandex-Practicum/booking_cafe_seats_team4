@@ -1,15 +1,31 @@
+from typing import Annotated, Optional
+
+from fastapi import Form
 from pydantic import BaseModel
 
 
 class AuthData(BaseModel):
-    """Входные данные для логина (username + password)."""
+    """Модель входных данных при авторизации."""
 
-    username: str
+    login: str
     password: str
+
+    @classmethod
+    def as_form(
+        cls,
+        username: Annotated[Optional[str], Form()] = None,
+        login: Annotated[Optional[str], Form()] = None,
+        password: Annotated[str, Form(...)] = None,
+    ) -> 'AuthData':
+        """Создаёт объект AuthData из данных формы."""
+        user_login = login or username
+        if not user_login:
+            raise ValueError('login/username is required')
+        return cls(login=user_login, password=password)
 
 
 class AuthToken(BaseModel):
-    """Ответ при логине: access token и его тип."""
+    """Модель ответа при успешной авторизации."""
 
     access_token: str
-    token_type: str
+    token_type: str = 'bearer'
