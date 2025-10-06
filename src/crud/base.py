@@ -1,11 +1,11 @@
-from typing import Optional
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.encoders import jsonable_encoder
 
 
 class CRUDBase:
+    """Базовый CRUD класс"""
 
     def __init__(self, model):
         self.model = model
@@ -16,13 +16,13 @@ class CRUDBase:
             session: AsyncSession,
     ):
         db_obj = await session.execute(
-            select(self.model).where(self.model.id == obj_id)
+            select(self.model).where(self.model.id == obj_id),
         )
         return db_obj.scalars().first()
 
     async def get_multi(
             self,
-            session: AsyncSession
+            session: AsyncSession,
     ):
         db_objs = await session.execute(select(self.model))
         return db_objs.scalars().all()
@@ -30,7 +30,7 @@ class CRUDBase:
     async def create(
             self,
             obj_in,
-            session: AsyncSession
+            session: AsyncSession,
     ):
         obj_in_data = obj_in.dict()
         db_obj = self.model(**obj_in_data)
