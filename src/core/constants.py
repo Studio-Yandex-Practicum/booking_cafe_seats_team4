@@ -1,0 +1,19 @@
+USERNAME_MAX = 150
+EMAIL_MAX = 254
+PHONE_MAX = 32
+TG_ID_MAX = 64
+PASSWORD_HASH_MAX = 255
+CAFE_NAME_MAX = 255
+
+CK_USERS_CONTACT_REQUIRED = 'ck_users_contact_required'
+UQ_CAFE_MANAGER = 'uq_cafe_manager_cafe_user'
+
+LOG_FORMAT = (
+    '%(asctime)s | %(levelname)s | %(name)s | '
+    'user=%(user)s id=%(user_id)s | %(message)s'
+)
+LOG_MAX_BYTES = 1_000_000
+LOG_BACKUP_COUNT = 3
+
+DEFAULT_USER_NAME = 'SYSTEM'
+DEFAULT_USER_ID = 'SYSTEM'
