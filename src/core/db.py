@@ -1,21 +1,30 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from collections.abc import AsyncIterator
 
-
-DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'
-
-engine = create_async_engine(DATABASE_URL, echo=True)
-
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
 )
 
-Base = declarative_base()
+from src.core.config import settings
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    class_=AsyncSession,
+)
 
 
-async def get_session() -> AsyncSession:
-    """Получить асинк сессию."""
+async def get_session() -> AsyncIterator[AsyncSession]:
+    """Возвращает асинхронную сессию БД для зависимостей FastAPI."""
     async with AsyncSessionLocal() as session:
         yield session
+
+
+__all__ = ['engine', 'AsyncSessionLocal', 'get_session']
