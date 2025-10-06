@@ -1,22 +1,69 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 
-from src.core.constants import CAFE_NAME_MAX
-from src.models.base import Base
-from src.models.cafe_manager import cafe_manager
+from .base import Base, BaseMixin
+from .relations import action_cafe, booking_table, cafe_manager, dish_cafe
 
 
-class Cafe(Base):
-    """ORM-модель кафе с названием и менеджерами."""
+class Cafe(Base, BaseMixin):
+    """Модель Кафе."""
 
-    __tablename__ = 'cafes'
+    name = Column(String(200), nullable=False)
+    address = Column(String, nullable=False)
+    phone = Column(String(20), nullable=False)
+    description = Column(Text, nullable=True)
+    photo_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey('media.id'),
+        nullable=True,
+    )
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(CAFE_NAME_MAX), nullable=False)
-
+    photo = relationship('Media')
+    tables = relationship(
+        'Table',
+        back_populates='cafe',
+        cascade='all, delete-orphan',
+    )
+    slots = relationship(
+        'Slot',
+        back_populates='cafe',
+        cascade='all, delete-orphan',
+    )
     managers = relationship(
         'User',
         secondary=cafe_manager,
-        back_populates='managed_cafes',
-        lazy='selectin',
+        # back_populates='managed_cafes' # Если добавим в User
     )
+    actions = relationship(
+        'Action',
+        secondary=action_cafe,
+        back_populates='cafes',
+    )
+    dishes = relationship(
+        'Dish',
+        secondary=dish_cafe,
+        back_populates='cafes',
+    )
+    bookings = relationship('Booking', back_populates='cafe')
+
+
+class Table(Base, BaseMixin):
+    """Модель Стол."""
+
+    cafe_id = Column(Integer, ForeignKey('cafes.id'), nullable=False)
+    description = Column(String, nullable=True)
+    seat_number = Column(Integer, nullable=False)
+
+    cafe = relationship('Cafe', back_populates='tables')
+    bookings = relationship(
+        'Booking',
+        secondary=booking_table,
+        back_populates='tables',
+    )
+
+
+class Slot(Base, BaseMixin):
+    """Модель Слот."""
+
+    pass
