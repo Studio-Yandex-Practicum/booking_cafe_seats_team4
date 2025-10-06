@@ -10,6 +10,7 @@ from .slots import TimeSlotShortInfo  # noqa
 
 
 class BookingStatus(IntEnum):
+    """Статусы бронирования."""
     ACTIVE = 0
     CANCELLED = 1
     COMPLETED = 2
@@ -35,10 +36,12 @@ class BookingBase(BaseModel):
 
 
 class BookingCreate(BookingBase):
+    """Схема для создания бронирования."""
     pass
 
 
 class BookingUpdate(BaseModel):
+    """Схема для обновления бронирования."""
     cafe_id: Optional[int] = None
     tables_id: Optional[List[int]] = None
     slots_id: Optional[List[int]] = None
@@ -62,6 +65,7 @@ class BookingUpdate(BaseModel):
 
 
 class BookingShortInfo(BaseModel):
+    """Краткая информация о бронировании."""
     id: int
     booking_date: date
     status: BookingStatus
@@ -71,6 +75,7 @@ class BookingShortInfo(BaseModel):
 
 
 class BookingInfo(BookingShortInfo):
+    """Полная информация о бронировании."""
     user_id: int
     cafe_id: int
     tables: List['TableShortInfo']

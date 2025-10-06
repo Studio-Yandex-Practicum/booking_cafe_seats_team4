@@ -7,6 +7,7 @@ from validators import validate_time_format, validate_time_range
 
 
 class TimeSlotBase(BaseModel):
+    """Базовая схема временного слота."""
     cafe_id: int
     start_time: constr(min_length=5, max_length=5)
     end_time: constr(min_length=5, max_length=5)
@@ -25,10 +26,12 @@ class TimeSlotBase(BaseModel):
 
 
 class TimeSlotCreate(TimeSlotBase):
+    """Схема для создания временного слота."""
     pass
 
 
 class TimeSlotUpdate(BaseModel):
+    """Схема для обновления временного слота."""
     cafe_id: Optional[int] = None
     start_time: Optional[constr(min_length=5, max_length=5)] = None
     end_time: Optional[constr(min_length=5, max_length=5)] = None
@@ -50,6 +53,7 @@ class TimeSlotUpdate(BaseModel):
 
 
 class TimeSlotShortInfo(BaseModel):
+    """Краткая информация о временном слоте."""
     id: int
     start_time: str
     end_time: str
@@ -60,6 +64,7 @@ class TimeSlotShortInfo(BaseModel):
 
 
 class TimeSlotInfo(TimeSlotShortInfo):
+    """Полная информация о временном слоте."""
     cafe_id: int
     is_active: bool
     created_at: datetime

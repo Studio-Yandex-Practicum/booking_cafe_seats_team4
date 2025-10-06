@@ -7,6 +7,7 @@ from models.base import BaseModel
 
 
 class BookingStatus(IntEnum):
+    """Статусы бронирования."""
     ACTIVE = 0
     CANCELLED = 1
     COMPLETED = 2
