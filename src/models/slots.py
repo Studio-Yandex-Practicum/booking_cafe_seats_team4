@@ -1,8 +1,11 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from models.base import BaseModel
 
+
 class Slot(BaseModel):
+    """Модель слотов."""
     __tablename__ = 'slots'
 
     cafe_id = Column(Integer, ForeignKey('cafes.id'), nullable=False)
@@ -14,5 +17,5 @@ class Slot(BaseModel):
     bookings = relationship(
         'Booking',
         secondary='booking_slots',
-        back_populates='slots'
+        back_populates='slots',
     )

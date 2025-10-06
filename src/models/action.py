@@ -1,10 +1,11 @@
-from sqlalchemy import Column, Text, ForeignKey
+from sqlalchemy import Column, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from models.base import BaseModel
 
 
 class Action(BaseModel):
+    """Модель акций."""
     __tablename__ = 'actions'
 
     description = Column(Text, nullable=False)
@@ -16,5 +17,5 @@ class Action(BaseModel):
     cafes = relationship(
         'Cafe',
         secondary='cafe_actions',
-        back_populates='actions'
+        back_populates='actions',
     )

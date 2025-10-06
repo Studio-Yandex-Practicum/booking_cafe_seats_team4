@@ -1,6 +1,8 @@
 from enum import IntEnum
+
 from sqlalchemy import Column, Integer, Text, Date, ForeignKey
 from sqlalchemy.orm import relationship
+
 from models.base import BaseModel
 
 
@@ -11,6 +13,7 @@ class BookingStatus(IntEnum):
 
 
 class Booking(BaseModel):
+    """Модель резервирования столов."""
     __tablename__ = 'booking'
 
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
@@ -25,15 +28,15 @@ class Booking(BaseModel):
     tables = relationship(
         'Table',
         secondary='booking_tables',
-        back_populates='bookings'
+        back_populates='bookings',
     )
     slots = relationship(
         'Slot',
         secondary='booking_slots',
-        back_populates='bookings'
+        back_populates='bookings',
     )
     dishes = relationship(
         'Dish',
         secondary='booking_dishes',
-        back_populates='bookings'
+        back_populates='bookings',
     )

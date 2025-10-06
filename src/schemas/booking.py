@@ -1,9 +1,12 @@
 from typing import Optional, List
 from datetime import datetime, date
 from enum import IntEnum
+
 from pydantic import BaseModel, validator
 
 from .validators import validate_date_not_past, validate_positive_number
+from .tables import TableShortInfo  # noqa
+from .slots import TimeSlotShortInfo  # noqa
 
 
 class BookingStatus(IntEnum):
