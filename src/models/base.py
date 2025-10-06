@@ -1,7 +1,24 @@
-from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, Integer, DateTime, Boolean
+
+from src.core.db import Base
 
 
-class Base(DeclarativeBase):
-    """Единая базовая модель проекта."""
+class BaseModel(Base):
+    """Базовая модель."""
+    __abstract__ = True
 
-    pass
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    active = Column(Boolean, default=True, nullable=False)
