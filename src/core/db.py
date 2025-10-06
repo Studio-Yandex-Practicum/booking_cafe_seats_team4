@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.core.config import settings
+
+Base = declarative_base()
 
 engine = create_async_engine(
     settings.DATABASE_URL,

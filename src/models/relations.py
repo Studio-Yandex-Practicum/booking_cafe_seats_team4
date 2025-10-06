@@ -26,20 +26,20 @@ cafe_actions = Table(
 booking_dishes = Table(
     'booking_dishes',
     Base.metadata,
-    Column('booking_id', Integer, ForeignKey('booking.id'), primary_key=True),
+    Column('booking_id', Integer, ForeignKey('bookings.id'), primary_key=True),
     Column('dish_id', Integer, ForeignKey('dishes.id'), primary_key=True),
 )
 
 booking_tables = Table(
     'booking_tables',
     Base.metadata,
-    Column('booking_id', Integer, ForeignKey('booking.id'), primary_key=True),
+    Column('booking_id', Integer, ForeignKey('bookings.id'), primary_key=True),
     Column('table_id', Integer, ForeignKey('tables.id'), primary_key=True),
 )
 
 booking_slots = Table(
     'booking_slots',
     Base.metadata,
-    Column('booking_id', Integer, ForeignKey('booking.id'), primary_key=True),
+    Column('booking_id', Integer, ForeignKey('bookings.id'), primary_key=True),
     Column('slot_id', Integer, ForeignKey('slots.id'), primary_key=True),
 )

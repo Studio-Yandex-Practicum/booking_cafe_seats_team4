@@ -2,12 +2,14 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 
-from .base import Base, BaseMixin
-from .relations import action_cafe, booking_table, cafe_manager, dish_cafe
+from .base import BaseModel
+from .relations import cafe_actions, booking_tables, cafe_managers, cafe_dishes
 
 
-class Cafe(Base, BaseMixin):
+class Cafe(BaseModel):
     """Модель Кафе."""
+
+    __tablename__ = 'cafes'
 
     name = Column(String(200), nullable=False)
     address = Column(String, nullable=False)
@@ -32,24 +34,26 @@ class Cafe(Base, BaseMixin):
     )
     managers = relationship(
         'User',
-        secondary=cafe_manager,
-        # back_populates='managed_cafes' # Если добавим в User
+        secondary=cafe_managers,
+        back_populates='managed_cafes'
     )
     actions = relationship(
         'Action',
-        secondary=action_cafe,
+        secondary=cafe_actions,
         back_populates='cafes',
     )
     dishes = relationship(
         'Dish',
-        secondary=dish_cafe,
+        secondary=cafe_dishes,
         back_populates='cafes',
     )
     bookings = relationship('Booking', back_populates='cafe')
 
 
-class Table(Base, BaseMixin):
+class Table(BaseModel):
     """Модель Стол."""
+
+    __tablename__ = 'tables'
 
     cafe_id = Column(Integer, ForeignKey('cafes.id'), nullable=False)
     description = Column(String, nullable=True)
@@ -58,12 +62,6 @@ class Table(Base, BaseMixin):
     cafe = relationship('Cafe', back_populates='tables')
     bookings = relationship(
         'Booking',
-        secondary=booking_table,
+        secondary=booking_tables,
         back_populates='tables',
     )
-
-
-class Slot(Base, BaseMixin):
-    """Модель Слот."""
-
-    pass

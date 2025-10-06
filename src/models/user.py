@@ -18,12 +18,12 @@ from src.core.constants import (
     TG_ID_MAX,
     USERNAME_MAX,
 )
-from src.models.base import Base
-from src.models.cafe_manager import cafe_manager
+from src.models.base import BaseModel
+from src.models.relations import cafe_managers
 from src.schemas.user import UserRole  # IntEnum (USER=0, MANAGER=1, ADMIN=2)
 
 
-class User(Base):
+class User(BaseModel):
     """ORM-модель пользователя (classic Column API)."""
 
     __tablename__ = 'users'
@@ -35,32 +35,24 @@ class User(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
     username = Column(String(USERNAME_MAX), nullable=False)
     email = Column(String(EMAIL_MAX), nullable=True)
     phone = Column(String(PHONE_MAX), nullable=True)
     tg_id = Column(String(TG_ID_MAX), nullable=True)
     role = Column(Integer, nullable=False, default=int(UserRole.USER))
-    is_active = Column('active', Boolean, nullable=False, default=True)
-
-    created_at = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=datetime.utcnow,
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-    )
-
     password_hash = Column(String(PASSWORD_HASH_MAX), nullable=False)
 
     # many-to-many с кафе
     managed_cafes = relationship(
         'Cafe',
-        secondary=cafe_manager,
+        secondary=cafe_managers,
         back_populates='managers',
         lazy='selectin',
+    )
+
+    # связь с Booking
+    bookings = relationship(
+        "Booking",
+        back_populates="user",
+        lazy="selectin",
     )

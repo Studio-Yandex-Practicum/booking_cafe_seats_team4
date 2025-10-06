@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 
@@ -9,7 +9,7 @@ class ActionCreate(BaseModel):
 
     description: str
     photo_id: UUID | None = None
-    cafe_ids: list[int] = []
+    cafe_ids: list[int] = Field(default_factory=list)
 
 
 class ActionUpdate(BaseModel):

@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from models.base import BaseModel
+from models.relations import cafe_actions
 
 
 class Action(BaseModel):
@@ -17,6 +18,6 @@ class Action(BaseModel):
 
     cafes = relationship(
         'Cafe',
-        secondary='cafe_actions',
+        secondary=cafe_actions,
         back_populates='actions',
     )

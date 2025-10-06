@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, constr, validator
 
-from validators import validate_time_format, validate_time_range
+from .validators import validate_time_format, validate_time_range
 
 
 class TimeSlotBase(BaseModel):
