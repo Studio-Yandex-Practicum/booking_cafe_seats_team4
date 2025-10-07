@@ -21,4 +21,4 @@ class BaseModel(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    active = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
