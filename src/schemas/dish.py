@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -24,24 +25,31 @@ class DishBase(BaseModel):
 
 class DishCreate(DishBase):
     """Схема создания блюда."""
-    cafe_ids: list[int] = Field(default_factory=list,
-                                description="ID кафе, где доступно блюдо")
+
+    cafe_ids: list[int] = Field(
+        default_factory=list,
+        description='ID кафе, где доступно блюдо',
+    )
 
 
 class DishUpdate(BaseModel):
     """Схема частичного обновления блюда."""
+
     name: NameStr | None = None
     price: Money | None = None
     description: str | None = None
     is_available: bool | None = None
     media_id: UUID | None = None
     active: bool | None = None
-    cafe_ids: list[int] | None = Field(None,
-                                       description="Полная замена списка кафе")
+    cafe_ids: list[int] | None = Field(
+        None,
+        description='Полная замена списка кафе',
+    )
 
 
 class DishOut(DishBase):
     """Схема вывода блюда в ответе API."""
+
     id: int
     # ▶ Можно добавить cafe_ids при необходимости
     # cafe_ids: list[int] = []

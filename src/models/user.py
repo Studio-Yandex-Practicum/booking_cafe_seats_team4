@@ -1,10 +1,6 @@
-from datetime import datetime
-
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     Column,
-    DateTime,
     Integer,
     String,
 )
@@ -52,7 +48,7 @@ class User(BaseModel):
 
     # связь с Booking
     bookings = relationship(
-        "Booking",
-        back_populates="user",
-        lazy="selectin",
+        'Booking',
+        back_populates='user',
+        lazy='selectin',
     )

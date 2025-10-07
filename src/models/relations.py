@@ -15,29 +15,29 @@ cafe_managers = Table(
 )
 
 # ▶ Акции ↔ Кафе (M2M)
-cafe_actions = _t("cafe_actions") or Table(
-    "cafe_actions",
+cafe_actions = _t('cafe_actions') or Table(
+    'cafe_actions',
     Base.metadata,
-    Column("cafe_id", Integer, ForeignKey("cafes.id"), primary_key=True),
-    Column("action_id", Integer, ForeignKey("actions.id"), primary_key=True),
+    Column('cafe_id', Integer, ForeignKey('cafes.id'), primary_key=True),
+    Column('action_id', Integer, ForeignKey('actions.id'), primary_key=True),
     extend_existing=True,  # важен при повторном импорте
 )
 
 # ▶ Блюда ↔ Кафе (M2M)
-cafe_dishes = _t("cafe_dishes") or Table(
-    "cafe_dishes",
+cafe_dishes = _t('cafe_dishes') or Table(
+    'cafe_dishes',
     Base.metadata,
-    Column("cafe_id", Integer, ForeignKey("cafes.id"), primary_key=True),
-    Column("dish_id", Integer, ForeignKey("dishes.id"), primary_key=True),
+    Column('cafe_id', Integer, ForeignKey('cafes.id'), primary_key=True),
+    Column('dish_id', Integer, ForeignKey('dishes.id'), primary_key=True),
     extend_existing=True,
 )
 
 # ▶ Бронирование ↔ Блюда (для предзаказа; можно ввести позже)
-booking_dishes = _t("booking_dishes") or Table(
-    "booking_dishes",
+booking_dishes = _t('booking_dishes') or Table(
+    'booking_dishes',
     Base.metadata,
-    Column("booking_id", Integer, ForeignKey("bookings.id"), primary_key=True),
-    Column("dish_id", Integer, ForeignKey("dishes.id"), primary_key=True),
+    Column('booking_id', Integer, ForeignKey('bookings.id'), primary_key=True),
+    Column('dish_id', Integer, ForeignKey('dishes.id'), primary_key=True),
     extend_existing=True,
 )
 

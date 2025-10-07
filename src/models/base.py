@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, DateTime, Boolean
+from sqlalchemy import Boolean, Column, DateTime, Integer
 
 from src.core.db import Base
 
 
 class BaseModel(Base):
     """Базовая модель."""
+
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
