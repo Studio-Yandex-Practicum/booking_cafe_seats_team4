@@ -1,23 +1,30 @@
-from sqlalchemy import Column, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+from typing import TYPE_CHECKING
+from uuid import UUID
 
-from models.base import BaseModel
-from models.relations import cafe_actions
+from sqlalchemy import Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
+from src.models.base import BaseModel
+from src.models.relations import cafe_actions
+
+if TYPE_CHECKING:
+    from src.models.cafe import Cafe
 
 
 class Action(BaseModel):
-    """Модель акций."""
-    __tablename__ = 'actions'
+    """Модель акции, действующей в одном или нескольких кафе."""
 
-    description = Column(Text, nullable=False)
-    photo_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey('media.id'),
-        nullable=True)
+    __tablename__ = "actions"
 
-    cafes = relationship(
-        'Cafe',
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    photo_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True),
+                                                  nullable=True)
+
+    cafes: Mapped[list["Cafe"]] = relationship(
+        "Cafe",
         secondary=cafe_actions,
-        back_populates='actions',
+        back_populates="actions",
+        lazy="selectin",
     )

@@ -1,11 +1,13 @@
+from __future__ import annotations
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.session import get_session
+from src.core.db import get_session
 from src.models.dish import Dish
+from src.models.cafe import Cafe
 from src.schemas.dish import DishCreate, DishOut, DishUpdate
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])
@@ -16,8 +18,22 @@ async def create_dish(
     data: DishCreate,
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
-    """Создать новое блюдо."""
-    dish = Dish(**data.dict())
+    """Создание нового блюда."""
+    dish: Dish = Dish(
+        name=data.name,
+        price=data.price,
+        description=data.description,
+        is_available=data.is_available,
+        media_id=data.media_id,
+        active=data.active,
+    )
+    if data.cafe_ids:
+        cafes: list[Cafe] = (
+            await session.execute(select(Cafe).where(Cafe.id.in_(data.cafe_ids)
+                                                     ))
+        ).scalars().all()
+        dish.cafes = cafes
+
     session.add(dish)
     await session.commit()
     await session.refresh(dish)
@@ -36,10 +52,8 @@ async def list_dishes(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=200),
 ) -> list[DishOut]:
-    """Список блюд с фильтрами по кафе, названию, цене и доступности."""
+    """Получение списка блюд с фильтрами и пагинацией."""
     stmt = select(Dish)
-    if cafe_id is not None:
-        stmt = stmt.where(Dish.cafe_id == cafe_id)
     if q:
         stmt = stmt.where(Dish.name.ilike(f"%{q}%"))
     if min_price is not None:
@@ -50,9 +64,12 @@ async def list_dishes(
         stmt = stmt.where(Dish.is_available == available)
     if active is not None:
         stmt = stmt.where(Dish.active == active)
+    if cafe_id is not None:
+        stmt = stmt.join(Dish.cafes).where(Cafe.id == cafe_id)
 
     res = await session.execute(stmt.offset(skip).limit(limit))
-    return list(res.scalars())
+    dishes: list[Dish] = list(res.scalars().unique().all())
+    return dishes
 
 
 @router.get("/{dish_id}", response_model=DishOut)
@@ -61,7 +78,7 @@ async def get_dish(
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
     """Получить блюдо по ID."""
-    dish = await session.get(Dish, dish_id)
+    dish: Dish | None = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
     return dish
@@ -73,13 +90,21 @@ async def update_dish(
     data: DishUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> DishOut:
-    """Частично обновить блюдо по ID."""
-    dish = await session.get(Dish, dish_id)
+    """Обновить данные блюда."""
+    dish: Dish | None = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
 
-    for k, v in data.dict(exclude_unset=True).items():
-        setattr(dish, k, v)
+    for key, value in data.model_dump(exclude_unset=True,
+                                      exclude={"cafe_ids"}).items():
+        setattr(dish, key, value)
+
+    if data.cafe_ids is not None:
+        cafes: list[Cafe] = (
+            await session.execute(select(Cafe).where(Cafe.id.in_(data.cafe_ids)
+                                                     ))
+        ).scalars().all()
+        dish.cafes = cafes
 
     await session.commit()
     await session.refresh(dish)
@@ -91,10 +116,9 @@ async def delete_dish(
     dish_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Мягкое удаление блюда (active=False)."""
-    dish = await session.get(Dish, dish_id)
+    """Мягкое удаление блюда."""
+    dish: Dish | None = await session.get(Dish, dish_id)
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
-
     dish.active = False
     await session.commit()
