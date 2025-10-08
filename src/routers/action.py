@@ -81,7 +81,7 @@ async def get_action(
     action = await session.get(Action, action_id)
     if not action:
         raise HTTPException(status_code=404, detail='Action not found')
-    _ = getattr(action, 'cafes', [])  # прогрузить связь, если лениво
+    _ = getattr(action, 'cafes', [])
     return to_out(action)
 
 

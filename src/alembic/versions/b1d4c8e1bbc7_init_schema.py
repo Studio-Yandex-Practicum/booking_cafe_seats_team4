@@ -1,10 +1,4 @@
-"""init schema
-
-Revision ID: b1d4c8e1bbc7
-Revises:
-Create Date: 2025-10-08 19:32:14.452775
-
-"""
+"""init schema."""
 from typing import Sequence, Union
 
 from alembic import op

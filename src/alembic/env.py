@@ -11,30 +11,30 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# --- Alembic base config
+# Alembic base config
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# --- PYTHONPATH: добавить src/
+# PYTHONPATH
 CURR = Path(__file__).resolve()
-SRC_ROOT = CURR.parents[1]  # .../src
+SRC_ROOT = CURR.parents[1]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-# --- Project imports
+# Project imports
 from core.config import settings
 from models.base import Base  # noqa: E402
 import models
 
 target_metadata = Base.metadata
 
-# --- DB URL (можно переопределить ALEMBIC_DATABASE_URL)
+# DB URL
 alembic_url = os.getenv("ALEMBIC_DATABASE_URL", settings.DATABASE_URL)
 config.set_main_option("sqlalchemy.url", alembic_url)
 
 
-# ---------- Offline ----------
+# Offline
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode (генерация SQL без подключения)."""
     url = config.get_main_option("sqlalchemy.url")
@@ -49,7 +49,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-# ---------- Online ----------
+# Online
 def do_run_migrations(connection: Connection) -> None:
     """Configure context and run migrations in a single transaction."""
     context.configure(
@@ -78,7 +78,7 @@ def run_migrations_online() -> None:
     asyncio.run(run_async_migrations())
 
 
-# ---------- Entrypoint ----------
+# Entrypoint
 if context.is_offline_mode():
     run_migrations_offline()
 else:
