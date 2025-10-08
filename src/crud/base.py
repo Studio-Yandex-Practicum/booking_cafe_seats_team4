@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models import User
+
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
@@ -26,8 +28,17 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def get_multi(
             self,
             session: AsyncSession,
+            current_user: Optional[User] = None,
+            show_all: bool = False,
+            **filters
     ) -> List[ModelType]:
-        db_objs = await session.execute(select(self.model))
+        query = select(self.model)
+        for field, value in filters.items():
+            if hasattr(self.model, field) and value is not None:
+                query = query.where(getattr(self.model, field) == value)
+        if not show_all and current_user and hasattr(self.model, 'user_id'):
+            query = query.where(self.model.user_id == current_user.id)
+        db_objs = await session.execute(query)
         return db_objs.scalars().all()
 
     async def create(
