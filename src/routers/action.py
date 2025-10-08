@@ -26,7 +26,7 @@ async def create_action(
     session: AsyncSession = Depends(get_session),
 ) -> ActionOut:
     """Создать акцию и (опционально) привязать к списку кафе."""
-    payload = data.model_dump()  # pydantic v2
+    payload = data.model_dump()
     action = Action(
         description=payload['description'],
         photo_id=payload.get('photo_id'),
