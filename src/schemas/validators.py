@@ -18,6 +18,7 @@ def validate_positive_number(value: int, field_name: str = 'Значение') -
 def validate_time_format(time_str: str) -> str:
     """Проверка формата времени (HH:MM)."""
     from datetime import datetime
+
     try:
         datetime.strptime(time_str, '%H:%M')
         return time_str
@@ -28,6 +29,7 @@ def validate_time_format(time_str: str) -> str:
 def validate_time_range(start_time: str, end_time: str) -> tuple[str, str]:
     """Проверка, что время окончания не раньше времени начала."""
     from datetime import datetime
+
     start = datetime.strptime(start_time, '%H:%M')
     end = datetime.strptime(end_time, '%H:%M')
     if end <= start:

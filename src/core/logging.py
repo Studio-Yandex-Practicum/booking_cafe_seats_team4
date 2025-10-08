@@ -4,8 +4,8 @@ from logging import Logger, LoggerAdapter
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, Tuple
 
-from src.core.config import settings
-from src.core.constants import (
+from core.config import settings
+from core.constants import (
     DEFAULT_USER_ID,
     DEFAULT_USER_NAME,
     LOG_BACKUP_COUNT,
