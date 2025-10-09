@@ -4,16 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps import get_current_user, require_manager_or_admin
-from src.api.validators.users import (
+from api.deps import get_current_user, require_manager_or_admin
+from api.validators.users import (
+    apply_user_update,
     ensure_contact_present_on_create,
     ensure_user_active,
     get_user_or_404,
 )
-from src.core.db import get_session
-from src.core.security import hash_password
-from src.models.user import User
-from src.schemas.user import UserCreate, UserInfo, UserUpdate
+from core.db import get_session
+from core.security import hash_password
+from models.user import User
+from schemas.user import UserCreate, UserInfo, UserUpdate
 
 router = APIRouter(prefix='/users', tags=['Пользователи'])
 
@@ -38,7 +39,6 @@ async def create_user(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> User:
     """Создаёт нового пользователя."""
-    # Просим хотя бы один контакт (email или phone)
     ensure_contact_present_on_create(payload)
 
     new_user = User(
@@ -78,17 +78,7 @@ async def patch_me(
             detail='Changing own role is forbidden',
         )
 
-    if payload.username is not None:
-        current.username = payload.username
-    if payload.email is not None:
-        current.email = payload.email
-    if payload.phone is not None:
-        current.phone = payload.phone
-    if payload.tg_id is not None:
-        current.tg_id = payload.tg_id
-    if payload.password is not None:
-        current.password_hash = hash_password(payload.password)
-
+    apply_user_update(current, payload)
     await session.commit()
     await session.refresh(current)
     return current
@@ -125,19 +115,7 @@ async def patch_user_by_id(
     user = await get_user_or_404(user_id, session)
     ensure_user_active(user)
 
-    if payload.username is not None:
-        user.username = payload.username
-    if payload.email is not None:
-        user.email = payload.email
-    if payload.phone is not None:
-        user.phone = payload.phone
-    if payload.tg_id is not None:
-        user.tg_id = payload.tg_id
-    if payload.role is not None:
-        user.role = int(payload.role)
-    if payload.password is not None:
-        user.password_hash = hash_password(payload.password)
-
+    apply_user_update(user, payload)
     await session.commit()
     await session.refresh(user)
     return user
