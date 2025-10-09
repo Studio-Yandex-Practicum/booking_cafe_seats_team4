@@ -35,9 +35,11 @@ class Dish(BaseModel):
         'Cafe',
         secondary=cafe_dishes,
         back_populates='dishes',
+        lazy='selectin',
     )
     bookings = relationship(
         'Booking',
         secondary=booking_dishes,
         back_populates='dishes',
+        lazy='selectin',
     )

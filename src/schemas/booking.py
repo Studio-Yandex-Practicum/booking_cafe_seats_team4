@@ -85,6 +85,7 @@ class BookingShortInfo(BaseModel):
     id: int
     booking_date: date
     status: BookingStatus
+
     model_config = ConfigDict(from_attributes=True)
 
 

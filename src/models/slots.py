@@ -15,9 +15,10 @@ class Slot(BaseModel):
     end_time = Column(String(5), nullable=False)
     description = Column(Text, nullable=False)
 
-    cafe = relationship('Cafe', back_populates='slots')
+    cafe = relationship('Cafe', back_populates='slots', lazy='selectin')
     bookings = relationship(
         'Booking',
         secondary=booking_slots,
         back_populates='slots',
+        lazy='selectin',
     )
