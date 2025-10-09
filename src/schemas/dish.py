@@ -7,13 +7,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
+# Удобные типы с ограничениями
 PositiveInt = Annotated[int, Field(ge=1)]
 Money = Annotated[Decimal, Field(ge=0)]
 NameStr = Annotated[str, Field(min_length=1, max_length=200)]
 
 
 class DishBase(BaseModel):
-    """Базовая схема блюда (общие поля)."""
+    """Базовая схема блюда (без привязки к одному кафе)."""
 
     name: NameStr
     price: Money
@@ -24,16 +25,13 @@ class DishBase(BaseModel):
 
 
 class DishCreate(DishBase):
-    """Схема создания блюда."""
+    """Создание блюда."""
 
-    cafe_ids: list[int] = Field(
-        default_factory=list,
-        description='ID кафе, где доступно блюдо',
-    )
+    cafe_ids: list[PositiveInt] | None = None
 
 
 class DishUpdate(BaseModel):
-    """Схема частичного обновления блюда."""
+    """Частичное обновление блюда."""
 
     name: NameStr | None = None
     price: Money | None = None
@@ -41,16 +39,12 @@ class DishUpdate(BaseModel):
     is_available: bool | None = None
     media_id: UUID | None = None
     active: bool | None = None
-    cafe_ids: list[int] | None = Field(
-        None,
-        description='Полная замена списка кафе',
-    )
+    cafe_ids: list[PositiveInt] | None = None
 
 
 class DishOut(DishBase):
-    """Схема вывода блюда в ответе API."""
+    """Ответ с блюдом."""
 
     id: int
-    # ▶ Можно добавить cafe_ids при необходимости
-    # cafe_ids: list[int] = []
+    cafe_ids: list[PositiveInt] = []
     model_config = ConfigDict(from_attributes=True)

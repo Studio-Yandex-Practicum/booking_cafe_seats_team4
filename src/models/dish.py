@@ -1,48 +1,41 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from uuid import UUID
+from sqlalchemy import Boolean, Column, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
-from sqlalchemy import Boolean, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from .relations import booking_dishes, cafe_dishes
 from src.models.base import BaseModel
-from src.models.relations import booking_dishes, cafe_dishes
-
-if TYPE_CHECKING:
-    from src.models.booking import Booking
-    from src.models.cafe import Cafe
 
 
 class Dish(BaseModel):
-    """Модель блюда меню кафе."""
+    """Модель блюда в меню кафе.
+    ТЗ: блюдо может быть в нескольких кафе → many-to-many через cafe_dishes.
+    В BaseModel ожидаются: id (UUID/int), created_at, updated_at, active.
+    """
 
     __tablename__ = 'dishes'
 
-    # ▶ Основные поля
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    is_available: Mapped[bool] = mapped_column(
-        Boolean,
-        default=True,
-        nullable=False,
-    )
-    media_id: Mapped[UUID | None] = mapped_column(
-        PG_UUID(as_uuid=True),
-        nullable=True,
-    )
-    # ▶ active — унаследовано из BaseModel
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Numeric(10, 2), nullable=False)
 
-    # ▶ Связи
-    cafes: Mapped[list['Cafe']] = relationship(
+    # Текущая доступность блюда в меню (отдельно от "active" из BaseModel)
+    is_available = Column(Boolean, default=True, nullable=False)
+
+    # ID изображения (UUID4) из сервиса /media
+    media_id = Column(UUID(as_uuid=True), nullable=True)
+
+    # Связь с кафе (M2M по ТЗ)
+    cafes = relationship(
         'Cafe',
         secondary=cafe_dishes,
         back_populates='dishes',
         lazy='selectin',
     )
-    bookings: Mapped[list['Booking']] = relationship(
+
+    # Предзаказ блюд в составе бронирования (опционально по ТЗ)
+    bookings = relationship(
         'Booking',
         secondary=booking_dishes,
         back_populates='dishes',

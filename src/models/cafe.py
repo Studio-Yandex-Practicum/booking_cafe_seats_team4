@@ -37,18 +37,15 @@ class Cafe(BaseModel):
         secondary=cafe_managers,
         back_populates='managed_cafes',
     )
-    dishes = relationship(
-        'Dish',
-        secondary=cafe_dishes,
-        back_populates='cafes',
-        lazy='selectin',
-    )
-
     actions = relationship(
         'Action',
         secondary=cafe_actions,
         back_populates='cafes',
-        lazy='selectin',
+    )
+    dishes = relationship(
+        'Dish',
+        secondary=cafe_dishes,
+        back_populates='cafes',
     )
     bookings = relationship('Booking', back_populates='cafe')
 

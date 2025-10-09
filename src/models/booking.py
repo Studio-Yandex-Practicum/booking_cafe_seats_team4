@@ -26,9 +26,7 @@ class Booking(BaseModel):
     guest_number = Column(Integer, nullable=False)
     note = Column(Text, nullable=True)
     status = Column(
-        Integer,
-        nullable=False,
-        default=BookingStatus.ACTIVE.value,
+        Integer, nullable=False, default=BookingStatus.ACTIVE.value,
     )
     booking_date = Column(Date, nullable=False)
 
