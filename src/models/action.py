@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Text
+from sqlalchemy import Column, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -12,11 +12,7 @@ class Action(BaseModel):
     __tablename__ = 'actions'
 
     description = Column(Text, nullable=False)
-    photo_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey('media.id'),
-        nullable=True,
-    )
+    photo_id = Column(UUID(as_uuid=True), nullable=False)
 
     cafes = relationship(
         'Cafe',

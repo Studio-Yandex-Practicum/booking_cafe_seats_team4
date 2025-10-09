@@ -1,6 +1,5 @@
 from typing import Generic, List, Optional, TypeVar
 
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,11 +52,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
     ) -> ModelType:
         """Частично обновить `db_obj` данными из `obj_in` и вернуть его."""
-        obj_data = jsonable_encoder(db_obj)
         update_data = obj_in.model_dump(exclude_unset=True)
 
         for field, value in update_data.items():
-            if field in obj_data and hasattr(db_obj, field):
+            if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
 
         session.add(db_obj)
