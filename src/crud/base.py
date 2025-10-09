@@ -28,10 +28,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def get_multi(
         self,
         session: AsyncSession,
+        only_active: bool = True,
     ) -> List[ModelType]:
         """Вернуть список всех объектов модели."""
-        db_objs = await session.execute(select(self.model))
-        return db_objs.scalars().all()
+        stmt = select(self.model)
+        if only_active and hasattr(self.model, 'is_active'):
+            stmt = stmt.where(self.model.is_active.is_(True))
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     async def create(
         self,
@@ -60,6 +64,19 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if field in obj_data and hasattr(db_obj, field):
                 setattr(db_obj, field, value)
 
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+        return db_obj
+
+    async def deactivate(self, db_obj: ModelType, session: AsyncSession) -> ModelType:
+        """Деактивация обьекта путем изменения поля is_active."""
+        if not hasattr(db_obj, 'is_active'):
+            raise AttributeError(
+                f'Модель {self.model.__name__} не имеет поля is_active'
+            )
+
+        db_obj.is_active = False
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)

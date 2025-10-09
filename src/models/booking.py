@@ -31,20 +31,23 @@ class Booking(BaseModel):
     )
     booking_date = Column(Date, nullable=False)
 
-    user = relationship('User', back_populates='bookings')
-    cafe = relationship('Cafe', back_populates='bookings')
+    user = relationship('User', back_populates='bookings', lazy='selectin')
+    cafe = relationship('Cafe', back_populates='bookings', lazy='selectin')
     tables = relationship(
         'Table',
         secondary=booking_tables,
         back_populates='bookings',
+        lazy='selectin',
     )
     slots = relationship(
         'Slot',
         secondary=booking_slots,
         back_populates='bookings',
+        lazy='selectin',
     )
     dishes = relationship(
         'Dish',
         secondary=booking_dishes,
         back_populates='bookings',
+        lazy='selectin',
     )

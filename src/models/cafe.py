@@ -21,16 +21,18 @@ class Cafe(BaseModel):
         nullable=True,
     )
 
-    photo = relationship('Media')
+    photo = relationship('Media', lazy='selectin')
     tables = relationship(
         'Table',
         back_populates='cafe',
         cascade='all, delete-orphan',
+        lazy='selectin',
     )
     slots = relationship(
         'Slot',
         back_populates='cafe',
         cascade='all, delete-orphan',
+        lazy='selectin',
     )
     managers = relationship(
         'User',
@@ -48,8 +50,9 @@ class Cafe(BaseModel):
         'Dish',
         secondary=cafe_dishes,
         back_populates='cafes',
+        lazy='selectin',
     )
-    bookings = relationship('Booking', back_populates='cafe')
+    bookings = relationship('Booking', back_populates='cafe', lazy='selectin')
 
 
 class Table(BaseModel):
@@ -61,9 +64,10 @@ class Table(BaseModel):
     description = Column(String, nullable=True)
     seat_number = Column(Integer, nullable=False)
 
-    cafe = relationship('Cafe', back_populates='tables')
+    cafe = relationship('Cafe', back_populates='tables', lazy='selectin')
     bookings = relationship(
         'Booking',
         secondary=booking_tables,
         back_populates='tables',
+        lazy='selectin',
     )
