@@ -1,16 +1,12 @@
-from datetime import datetime
-
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     Column,
-    DateTime,
     Integer,
     String,
 )
 from sqlalchemy.orm import relationship
 
-from src.core.constants import (
+from core.constants import (
     CK_USERS_CONTACT_REQUIRED,
     EMAIL_MAX,
     PASSWORD_HASH_MAX,
@@ -18,9 +14,10 @@ from src.core.constants import (
     TG_ID_MAX,
     USERNAME_MAX,
 )
-from src.models.base import BaseModel
-from src.models.relations import cafe_managers
-from src.schemas.user import UserRole  # IntEnum (USER=0, MANAGER=1, ADMIN=2)
+from schemas.user import UserRole
+
+from .base import BaseModel
+from .relations import cafe_managers
 
 
 class User(BaseModel):
@@ -52,7 +49,7 @@ class User(BaseModel):
 
     # связь с Booking
     bookings = relationship(
-        "Booking",
-        back_populates="user",
-        lazy="selectin",
+        'Booking',
+        back_populates='user',
+        lazy='selectin',
     )

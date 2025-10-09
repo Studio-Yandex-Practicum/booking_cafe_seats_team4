@@ -1,8 +1,8 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from models.base import BaseModel
-from models.relations import booking_slots
+from .base import BaseModel
+from .relations import booking_slots
 
 
 class Slot(BaseModel):

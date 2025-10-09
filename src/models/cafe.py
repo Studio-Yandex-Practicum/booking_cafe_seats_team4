@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
-from .relations import cafe_actions, booking_tables, cafe_managers, cafe_dishes
+from .relations import booking_tables, cafe_actions, cafe_dishes, cafe_managers
 
 
 class Cafe(BaseModel):
@@ -35,12 +35,14 @@ class Cafe(BaseModel):
     managers = relationship(
         'User',
         secondary=cafe_managers,
-        back_populates='managed_cafes'
+        back_populates='managed_cafes',
+        lazy='selectin',
     )
     actions = relationship(
         'Action',
         secondary=cafe_actions,
         back_populates='cafes',
+        lazy='selectin',
     )
     dishes = relationship(
         'Dish',

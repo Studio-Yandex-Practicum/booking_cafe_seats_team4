@@ -1,32 +1,28 @@
-from datetime import datetime
-from decimal import Decimal
-
 from sqlalchemy import (
     Boolean,
+    Column,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
-    Column,
-    Integer,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from src.models.base import BaseModel
-
-from .relations import cafe_dishes, booking_dishes
+from .base import BaseModel
+from .relations import booking_dishes, cafe_dishes
 
 
 class Dish(BaseModel):
     """Модель блюда в меню кафе."""
 
-    __tablename__ = "dishes"
+    __tablename__ = 'dishes'
 
     cafe_id = Column(
         Integer,
         ForeignKey('cafes.id', ondelete='CASCADE'),
-        nullable=False
+        nullable=False,
     )
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)

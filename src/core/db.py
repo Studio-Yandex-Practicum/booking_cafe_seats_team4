@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from http import HTTPStatus
 from fastapi import HTTPException
 from sqlalchemy.ext.declarative import declarative_base
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -13,6 +14,7 @@ from src.core.logging import get_logger
 
 
 logger = get_logger(__name__)
+
 
 Base = declarative_base()
 

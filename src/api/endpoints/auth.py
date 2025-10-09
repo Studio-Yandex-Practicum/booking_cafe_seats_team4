@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.validators.auth import authenticate_user
-from src.core.db import get_session
-from src.core.security import create_access_token
-from src.schemas.auth import AuthData, AuthToken
+from api.validators.auth import authenticate_user
+from core.db import get_session
+from core.security import create_access_token
+from schemas.auth import AuthData, AuthToken
 
 router = APIRouter(prefix='/auth', tags=['Аутентификация'])
 
