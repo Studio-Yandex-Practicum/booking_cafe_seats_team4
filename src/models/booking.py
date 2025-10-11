@@ -3,8 +3,7 @@ from enum import IntEnum
 from sqlalchemy import Column, Date, ForeignKey, Integer, Text
 from sqlalchemy.orm import relationship
 
-from models.base import BaseModel
-
+from .base import BaseModel
 from .relations import booking_dishes, booking_slots, booking_tables
 
 
@@ -26,24 +25,29 @@ class Booking(BaseModel):
     guest_number = Column(Integer, nullable=False)
     note = Column(Text, nullable=True)
     status = Column(
-        Integer, nullable=False, default=BookingStatus.ACTIVE.value,
+        Integer,
+        nullable=False,
+        default=BookingStatus.ACTIVE.value,
     )
     booking_date = Column(Date, nullable=False)
 
-    user = relationship('User', back_populates='bookings')
-    cafe = relationship('Cafe', back_populates='bookings')
+    user = relationship('User', back_populates='bookings', lazy='selectin')
+    cafe = relationship('Cafe', back_populates='bookings', lazy='selectin')
     tables = relationship(
         'Table',
         secondary=booking_tables,
         back_populates='bookings',
+        lazy='selectin',
     )
     slots = relationship(
         'Slot',
         secondary=booking_slots,
         back_populates='bookings',
+        lazy='selectin',
     )
     dishes = relationship(
         'Dish',
         secondary=booking_dishes,
         back_populates='bookings',
+        lazy='selectin',
     )

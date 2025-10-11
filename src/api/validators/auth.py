@@ -2,8 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.security import verify_password
-from src.models.user import User
+from core.security import verify_password
+from models.user import User
 
 
 async def authenticate_user(
@@ -12,6 +12,8 @@ async def authenticate_user(
     password: str,
 ) -> User:
     """Найти пользователя, проверить пароль."""
+    login = login.strip()
+
     stmt = (
         select(User)
         .where((User.email == login) | (User.phone == login))
@@ -24,7 +26,7 @@ async def authenticate_user(
         detail='Invalid credentials',
     )
 
-    if not user:
+    if user is None:
         raise invalid
 
     if not verify_password(password, user.password_hash):

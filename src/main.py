@@ -1,16 +1,16 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from src.api import api_router
-from src.core.config import settings
-from src.core.logging import get_logger, setup_logging
-
-app = FastAPI(title='Booking Cafe API')
-"""Основное приложение FastAPI."""
+from api import api_router
+from core.config import settings
+from core.logging import get_logger, setup_logging
 
 
-@app.on_event('startup')
-async def _startup() -> None:
-    """Инициализация при запуске приложения."""
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Инициализация и корректное завершение сервиса."""
     setup_logging()
     log = get_logger(__name__)
     try:
@@ -19,6 +19,14 @@ async def _startup() -> None:
         tail = '<unparsed>'
     log.info(f'db_url_tail={tail}')
     log.info('service started')
+    try:
+        yield
+    finally:
+        log.info('service shutdown')
+
+
+app = FastAPI(title='Booking Cafe API', lifespan=lifespan)
+"""Основное приложение FastAPI."""
 
 
 @app.get('/', tags=['health'])
@@ -30,13 +38,7 @@ def root() -> dict[str, str]:
 app.include_router(api_router)
 """Подключение всех маршрутов API."""
 
-
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run(
-        'src.main:app',
-        host='0.0.0.0',
-        port=8000,
-        reload=True,
-    )
+    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)

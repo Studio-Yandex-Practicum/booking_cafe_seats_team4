@@ -5,13 +5,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.db import get_session
-from src.core.security import TokenError, decode_token
-from src.models.user import User
-from src.schemas.user import UserRole
+from core.db import get_session
+from core.security import TokenError, decode_token
+from models.user import User
+from schemas.user import UserRole
 
-# должно совпадать с POST /auth/login
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/login')
 
 
 async def get_current_user(
@@ -25,6 +24,7 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid token',
+            headers={'WWW-Authenticate': 'Bearer'},
         )
 
     sub = payload.get('sub')
@@ -34,13 +34,15 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid token',
+            headers={'WWW-Authenticate': 'Bearer'},
         )
 
     user = await session.scalar(select(User).where(User.id == user_id))
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='User not found',
+            headers={'WWW-Authenticate': 'Bearer'},
         )
     if not user.is_active:
         raise HTTPException(

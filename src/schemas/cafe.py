@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .user import UserShortInfo
 
@@ -44,11 +44,7 @@ class CafeShortInfo(BaseModel):
     phone: str
     description: Optional[str] = None
     photo_id: Optional[UUID] = None
-
-    class Config:
-        """Конфигурация схемы."""
-
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CafeInfo(CafeShortInfo):
@@ -88,11 +84,7 @@ class TableShortInfo(BaseModel):
     id: int
     description: Optional[str] = None
     seat_number: int
-
-    class Config:
-        """Конфигурация схемы."""
-
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TableInfo(TableShortInfo):

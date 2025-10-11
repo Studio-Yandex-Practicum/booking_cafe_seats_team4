@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, DateTime, Integer
 
-from src.core.db import Base
+from core.db import Base
 
 
 class BaseModel(Base):
@@ -22,4 +22,4 @@ class BaseModel(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    active = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)

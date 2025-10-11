@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import IntEnum
 from typing import List, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from .cafe import TableShortInfo  # noqa
 from .slots import TimeSlotShortInfo  # noqa
@@ -18,6 +18,8 @@ class BookingStatus(IntEnum):
 
 
 class BookingBase(BaseModel):
+    """Базовая схема бронирования."""
+
     user_id: int
     cafe_id: int
     tables_id: List[int]
@@ -27,13 +29,15 @@ class BookingBase(BaseModel):
     status: BookingStatus
     booking_date: date
 
-    @validator('booking_date')
-    def validate_booking_date_not_in_past(cls, booking_date):
-        return validate_date_not_past(booking_date)
+    @field_validator('booking_date')
+    @classmethod
+    def _validate_booking_date_not_in_past(cls, v: date) -> date:
+        return validate_date_not_past(v)
 
-    @validator('guest_number')
-    def validate_guest_number_positive(cls, guest_count):
-        return validate_positive_number(guest_count, 'Количество гостей')
+    @field_validator('guest_number')
+    @classmethod
+    def _validate_guest_number_positive(cls, v: int) -> int:
+        return validate_positive_number(v, 'Количество гостей')
 
 
 class BookingCreate(BookingBase):
@@ -54,17 +58,25 @@ class BookingUpdate(BaseModel):
     note: Optional[str] = None
     is_active: Optional[bool] = None
 
-    @validator('booking_date')
-    def validate_booking_date_not_in_past(cls, booking_date):
-        if booking_date is not None:
-            return validate_date_not_past(booking_date)
-        return booking_date
+    @field_validator('booking_date')
+    @classmethod
+    def _validate_booking_date_not_in_past_optional(
+        cls,
+        v: Optional[date],
+    ) -> Optional[date]:
+        if v is not None:
+            return validate_date_not_past(v)
+        return v
 
-    @validator('guest_number')
-    def validate_guest_number_positive(cls, guest_count):
-        if guest_count is not None:
-            return validate_positive_number(guest_count, 'Количество гостей')
-        return guest_count
+    @field_validator('guest_number')
+    @classmethod
+    def _validate_guest_number_positive_optional(
+        cls,
+        v: Optional[int],
+    ) -> Optional[int]:
+        if v is not None:
+            return validate_positive_number(v, 'Количество гостей')
+        return v
 
 
 class BookingShortInfo(BaseModel):
@@ -74,8 +86,7 @@ class BookingShortInfo(BaseModel):
     booking_date: date
     status: BookingStatus
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingInfo(BookingShortInfo):
@@ -91,5 +102,4 @@ class BookingInfo(BookingShortInfo):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
