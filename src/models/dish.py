@@ -29,7 +29,7 @@ class Dish(BaseModel):
     price = Column(Numeric(10, 2), nullable=False)
 
     is_available = Column(Boolean, default=True, nullable=False)
-    media_id = Column(UUID(as_uuid=True), nullable=True)
+    photo_id = Column(UUID(as_uuid=True), nullable=False)
 
     cafes = relationship(
         'Cafe',
