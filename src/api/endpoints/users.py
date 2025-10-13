@@ -1,18 +1,16 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
 from api.validators.users import (
-    apply_user_update,
     ensure_contact_present_on_create,
     ensure_user_active,
     get_user_or_404,
 )
 from core.db import get_session
-from core.security import hash_password
+from crud.users import user_crud
 from models.user import User
 from schemas.user import UserCreate, UserInfo, UserUpdate
 
@@ -23,43 +21,30 @@ router = APIRouter(prefix='/users', tags=['Пользователи'])
 async def list_users(
     _: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> list[User]:
-    """Возвращает список всех пользователей."""
-    rows = await session.scalars(select(User).order_by(User.id))
-    return list(rows)
+) -> list[UserInfo]:
+    """Возвращает список всех активных пользователей, отсортированный по ID."""
+    return await user_crud.list_all(session=session, only_active=True)
 
 
 @router.post(
     '',
     response_model=UserInfo,
     summary='Регистрация нового пользователя',
+    status_code=status.HTTP_200_OK,
 )
 async def create_user(
     payload: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
-    """Создаёт нового пользователя."""
+) -> UserInfo:
+    """Создаёт нового пользователя (через CRUD)."""
     ensure_contact_present_on_create(payload)
-
-    new_user = User(
-        username=payload.username,
-        email=payload.email,
-        phone=payload.phone,
-        tg_id=payload.tg_id,
-        role=0,
-        is_active=True,
-        password_hash=hash_password(payload.password),
-    )
-    session.add(new_user)
-    await session.commit()
-    await session.refresh(new_user)
-    return new_user
+    return await user_crud.create_with_hash(payload, session)
 
 
 @router.get('/me', response_model=UserInfo, summary='Текущий пользователь')
 async def get_me(
     current: Annotated[User, Depends(get_current_user)],
-) -> User:
+) -> UserInfo:
     """Возвращает данные текущего пользователя."""
     return current
 
@@ -69,19 +54,14 @@ async def patch_me(
     payload: UserUpdate,
     current: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
-    """Позволяет изменить данные текущего пользователя."""
-    # Себе роль менять нельзя
+) -> UserInfo:
+    """Позволяет частично изменить свои данные."""
     if payload.role is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Changing own role is forbidden',
         )
-
-    apply_user_update(current, payload)
-    await session.commit()
-    await session.refresh(current)
-    return current
+    return await user_crud.update_with_logic(current, payload, session)
 
 
 @router.get(
@@ -93,8 +73,8 @@ async def get_user_by_id(
     user_id: int,
     _: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
-    """Возвращает пользователя по его ID."""
+) -> UserInfo:
+    """Возвращает пользователя по его ID (только активного)."""
     user = await get_user_or_404(user_id, session)
     ensure_user_active(user)
     return user
@@ -110,12 +90,8 @@ async def patch_user_by_id(
     payload: UserUpdate,
     _: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
-    """Изменяет данные пользователя по ID."""
+) -> UserInfo:
+    """Изменяет данные пользователя по ID (через CRUD)."""
     user = await get_user_or_404(user_id, session)
     ensure_user_active(user)
-
-    apply_user_update(user, payload)
-    await session.commit()
-    await session.refresh(user)
-    return user
+    return await user_crud.update_with_logic(user, payload, session)

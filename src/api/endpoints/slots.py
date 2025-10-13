@@ -4,16 +4,16 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import require_manager_or_admin
+from api.validators.slots import (
+    cafe_exists,
+    slot_active,
+    slot_exists,
+    user_can_manage_cafe,
+)
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
-from validators.slots import (
-    cafe_exists,
-    slot_exists,
-    user_can_manage_cafe,
-    slot_active,
-)
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 
@@ -41,9 +41,7 @@ async def create_slot(
     """Создание временного слота (только менеджер своего кафе или админ)."""
     cafe = await cafe_exists(payload.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
-
-    new_slot = await slot_crud.create(payload, session)
-    return new_slot
+    return await slot_crud.create(payload, session)
 
 
 @router.get(
@@ -77,8 +75,7 @@ async def update_slot(
     cafe = await cafe_exists(slot.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
 
-    updated = await slot_crud.update(slot, payload, session)
-    return updated
+    return await slot_crud.update(slot, payload, session)
 
 
 @router.delete(
@@ -97,5 +94,4 @@ async def deactivate_slot(
     cafe = await cafe_exists(slot.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
 
-    deactivated = await slot_crud.deactivate(slot, session)
-    return deactivated
+    return await slot_crud.deactivate(slot, session)

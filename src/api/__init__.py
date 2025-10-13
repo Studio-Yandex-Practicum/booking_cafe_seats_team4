@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 from .endpoints import auth as auth_router
-from .endpoints import users as users_router
 from .endpoints import slots as slots_router
+from .endpoints import users as users_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router.router)

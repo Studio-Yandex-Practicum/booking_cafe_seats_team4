@@ -15,13 +15,11 @@ class Cafe(BaseModel):
     address = Column(String, nullable=False)
     phone = Column(String(20), nullable=False)
     description = Column(Text, nullable=True)
-    photo_id = Column(
-        PG_UUID(as_uuid=True),
-        ForeignKey('media.id'),
-        nullable=True,
-    )
 
-    photo = relationship('Media', lazy='selectin')
+    # Был ForeignKey('media.id') + relationship('Media')
+    # Стало: внешний ИД объекта, который хранится вне нашей БД
+    photo_id = Column(PG_UUID(as_uuid=True), nullable=True)
+
     tables = relationship(
         'Table',
         back_populates='cafe',
