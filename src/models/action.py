@@ -12,7 +12,9 @@ class Action(BaseModel):
     __tablename__ = 'actions'
 
     description = Column(Text, nullable=False)
-    photo_id = Column(UUID(as_uuid=True), nullable=False)
+
+    # Был FK на media.id - оставила внешний идентификатор онли
+    photo_id = Column(UUID(as_uuid=True), nullable=True)
 
     cafes = relationship(
         'Cafe',
