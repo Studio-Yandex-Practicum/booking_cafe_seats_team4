@@ -5,20 +5,19 @@ from pydantic import BaseModel, Field
 
 
 class AuthData(BaseModel):
-    """Входные данные при авторизации (форма Swagger: username + password)."""
+    """Входные данные при авторизации (форма: login + password)."""
 
-    # В модели храним login (email/phone), но поле называется username
     login: str = Field(..., description='Email или телефон')
     password: str = Field(..., description='Пароль')
 
     @classmethod
     def as_form(
         cls,
-        username: Annotated[str, Form(..., description='Email или телефон')],
+        login: Annotated[str, Form(..., description='Email или телефон')],
         password: Annotated[str, Form(..., description='Пароль')],
     ) -> 'AuthData':
-        """Собирает модель из полей HTML-формы (username, password)."""
-        return cls(login=username, password=password)
+        """Собирает модель из полей HTML-формы (login, password)."""
+        return cls(login=login, password=password)
 
 
 class AuthToken(BaseModel):

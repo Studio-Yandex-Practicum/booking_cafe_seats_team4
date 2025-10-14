@@ -13,7 +13,9 @@ class CafeService:
 
     @staticmethod
     async def get_all_cafes(
-        session: AsyncSession, current_user: User, show_all: bool = False,
+        session: AsyncSession,
+        current_user: User,
+        show_all: bool = False,
     ) -> List[CafeInfo]:
         """Получает список кафе и фильтрует их."""
         cafes_db = await cafe_crud.get_multi(session=session)
@@ -31,7 +33,9 @@ class CafeService:
 
     @staticmethod
     async def get_cafe(
-        session: AsyncSession, cafe_id: int, current_user: User,
+        session: AsyncSession,
+        cafe_id: int,
+        current_user: User,
     ) -> CafeInfo | None:
         """Получает конкретное кафе, проверяет права доступа."""
         cafe_db = await cafe_crud.get(obj_id=cafe_id, session=session)
@@ -50,7 +54,8 @@ class CafeService:
 
     @staticmethod
     async def create_cafe(
-        session: AsyncSession, cafe_in: CafeCreate,
+        session: AsyncSession,
+        cafe_in: CafeCreate,
     ) -> CafeInfo:
         """Создает новое кафе в базе и возвращает представление."""
         new_cafe_db = await cafe_crud.create(obj_in=cafe_in, session=session)
@@ -59,7 +64,9 @@ class CafeService:
 
     @staticmethod
     async def update_cafe(
-        session: AsyncSession, cafe_id: int, cafe_in: CafeUpdate,
+        session: AsyncSession,
+        cafe_id: int,
+        cafe_in: CafeUpdate,
     ) -> CafeInfo | None:
         """Обновляет кафе в базе и возвращает его обновленное представление."""
         db_cafe = await cafe_crud.get(obj_id=cafe_id, session=session)
@@ -68,7 +75,9 @@ class CafeService:
             return None
 
         updated_cafe_db = await cafe_crud.update(
-            db_obj=db_cafe, obj_in=cafe_in, session=session,
+            db_obj=db_cafe,
+            obj_in=cafe_in,
+            session=session,
         )
 
         return CafeInfo.model_validate(updated_cafe_db, from_attributes=True)

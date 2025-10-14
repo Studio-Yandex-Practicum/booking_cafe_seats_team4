@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -25,11 +26,12 @@ class User(BaseModel):
 
     __tablename__ = 'users'
     __table_args__ = (
-        # обязательно указан email ИЛИ phone
         CheckConstraint(
             '(email IS NOT NULL) OR (phone IS NOT NULL)',
             name=CK_USERS_CONTACT_REQUIRED,
         ),
+        UniqueConstraint('email', name='uq_users_email'),
+        UniqueConstraint('phone', name='uq_users_phone'),
     )
 
     username = Column(String(USERNAME_MAX), nullable=False)

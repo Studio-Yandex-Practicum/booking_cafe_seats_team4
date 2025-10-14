@@ -7,10 +7,9 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "fd63ee30f3be"
-down_revision: Union[str, Sequence[str], None] = "b1d4c8e1bbc7"
+down_revision: Union[str, Sequence[str], None] = "d03009fd0dd0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
 
 def upgrade() -> None:
     # Снять FK с cafes.photo_id -> media.id

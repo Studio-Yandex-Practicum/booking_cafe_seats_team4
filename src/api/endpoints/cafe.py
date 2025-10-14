@@ -20,7 +20,9 @@ async def get_all_cafes(
 ) -> List[CafeInfo]:
     """Получить список всех кафе."""
     return await CafeService.get_all_cafes(
-        session, current_user, show_all,
+        session,
+        current_user,
+        show_all,
     )
 
 
@@ -44,7 +46,8 @@ async def get_cafe_by_id(
     cafe = await CafeService.get_cafe(session, cafe_id, current_user)
     if not cafe:
         raise HTTPException(
-            status_code=404, detail='Кафе не найдено.',
+            status_code=404,
+            detail='Кафе не найдено.',
         )
     return cafe
 

@@ -25,7 +25,8 @@ class TableService:
             return None
 
         tables_db = await table_crud.get_multi(
-            session=session, cafe_id=cafe_id,
+            session=session,
+            cafe_id=cafe_id,
         )
 
         is_admin_or_manager = current_user.role in (
@@ -42,7 +43,10 @@ class TableService:
 
     @staticmethod
     async def get_table(
-        session: AsyncSession, cafe_id: int, table_id: int, current_user: User,
+        session: AsyncSession,
+        cafe_id: int,
+        table_id: int,
+        current_user: User,
     ) -> TableInfo | None:
         """Получает один стол по ID с проверкой кафе и прав доступа."""
         table_db = await table_crud.get(obj_id=table_id, session=session)
@@ -60,18 +64,22 @@ class TableService:
 
     @staticmethod
     async def create_table(
-        session: AsyncSession, table_in: TableCreate,
+        session: AsyncSession,
+        table_in: TableCreate,
     ) -> TableInfo:
         """Создает новый стол в базе."""
         new_table_db = await table_crud.create(
-            obj_in=table_in, session=session,
+            obj_in=table_in,
+            session=session,
         )
 
         return TableInfo.model_validate(new_table_db, from_attributes=True)
 
     @staticmethod
     async def update_table(
-        session: AsyncSession, table_id: int, table_in: TableUpdate,
+        session: AsyncSession,
+        table_id: int,
+        table_in: TableUpdate,
     ) -> TableInfo | None:
         """Обновляет стол. Возвращает None, если стол не найден."""
         db_table = await table_crud.get(obj_id=table_id, session=session)
@@ -79,7 +87,9 @@ class TableService:
             return None
 
         updated_table_db = await table_crud.update(
-            db_obj=db_table, obj_in=table_in, session=session,
+            db_obj=db_table,
+            obj_in=table_in,
+            session=session,
         )
 
         return TableInfo.model_validate(updated_table_db, from_attributes=True)
