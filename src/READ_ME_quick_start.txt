@@ -1,89 +1,32 @@
 # Быстрый старт (локально)
 
-## 1 Поднять Postgres в Docker
-> Нужен Docker Desktop.
-
-```bash
-docker run --name cafe-pg \
-  -e POSTGRES_USER=app \
-  -e POSTGRES_PASSWORD=app \
-  -e POSTGRES_DB=cafe \
-  -p 5432:5432 -d postgres:15
+## Запуск всех сервисов
 ```
-
-Запуск:
-```bash
-docker compose up -d
-```
-
----
-
-## 2 Настроить окружение
-Активируйте venv и поставьте зависимости:
-```bash
-python -m venv .venv
-source .venv/Scripts/activate  # Windows (Git Bash/MINGW64)
-# . .venv/bin/activate         # macOS/Linux
-pip install -r requirements.txt
-```
-
-Создайте в папке infra/.env-файл на основе:
-
-# DB (Postgres, async)
-POSTGRES_USER=username
-POSTGRES_PASSWORD=password
-POSTGRES_DB=app_db
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-
-# DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/app_db
-
-# JWT
-SECRET=CHANGE_ME_SUPER_SECRET_32CHARS_MIN
-JWT_ALGO=HS256
-TOKEN_IDLE_TTL_MIN=30
-
-# logging
-LOG_LEVEL=INFO
-# LOG_FILE=./app.log
-
----
-
-## 3 Примените миграции (из папки `src/`), если требуется.
-```bash
+bash
 cd src
-alembic upgrade head
+docker compose up -d --build
 ```
 
----
+## Сервисы после запуска
 
-## 4 Запустите API (из папки `src/`)
-```bash
-uvicorn main:app --reload
+- API: http://localhost:8000/docs
+- База данных: localhost:5432
+- Redis: localhost:6379
+- RabbitMQ: http://localhost:15672 (логин: guest, пароль: guest)
+
+## Проверить статус
+
 ```
-Swagger: http://127.0.0.1:8000/docs
-
----
-
-# Создание суперпользователя (ADMIN)
-Запускать **из папки `src/`**
-
-**Вариант 1. Интерактивно**
-```bash
-python -m services.users
+bash
+docker compose ps 
 ```
-Скрипт попросит `Login (email/phone)` и `Password`.
 
-**Вариант 2. Одной командой через ENV**
-- Git Bash / macOS / Linux:
-  ```bash
-  SU_LOGIN=admin@example.com SU_PASSWORD=PASSWORD python -m services.users
-  ```
-- PowerShell:
-  ```powershell
-  $env:SU_LOGIN="admin@example.com"; $env:SU_PASSWORD="PASSWORD"
-  python -m services.users
-  ```
+# Создать суперпользователя
+
+```
+bash
+docker compose exec web python -m services.users
+```
 
 Ожидаемый вывод:
 ```
@@ -103,10 +46,17 @@ OK: superuser id=3, login=admin@example.com, active=True, role=2
 ---
 
 # Полезные команды
-Остановить/удалить контейнер Postgres:
-```bash
-docker stop cafe-pg && docker rm cafe-pg
-```
+## Остановить все сервисы
+docker compose down
+
+## Остановить и удалить все данные
+docker compose down -v
+
+## Посмотреть логи
+docker compose logs web
+
+## Перезапустить конкретный сервис
+docker compose restart web
 
 Alembic (из `src/`):
 ```bash
