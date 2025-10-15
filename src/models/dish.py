@@ -1,8 +1,6 @@
 from sqlalchemy import (
     Boolean,
     Column,
-    ForeignKey,
-    Integer,
     Numeric,
     String,
     Text,
@@ -15,21 +13,15 @@ from .relations import booking_dishes, cafe_dishes
 
 
 class Dish(BaseModel):
-    """Модель блюда в меню кафе."""
+    """Модель блюда."""
 
     __tablename__ = 'dishes'
 
-    cafe_id = Column(
-        Integer,
-        ForeignKey('cafes.id', ondelete='CASCADE'),
-        nullable=False,
-    )
-    name = Column(String(200), nullable=False)
+    name = Column(String(200), nullable=False, index=True)
     description = Column(Text, nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
-
     is_available = Column(Boolean, default=True, nullable=False)
-    photo_id = Column(UUID(as_uuid=True), nullable=False)
+    photo_id = Column(UUID(as_uuid=True), nullable=True)
 
     cafes = relationship(
         'Cafe',
