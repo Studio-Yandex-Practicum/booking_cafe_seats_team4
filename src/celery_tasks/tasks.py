@@ -38,7 +38,7 @@ def save_image(image_data: bytes, media_id: str):
 
 
 @celery_app.task(name='send_email_task')
-def send_email_task(recipient, subject, body):
+def send_email_task(recipient: User, subject, body: str) -> str:
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
@@ -53,7 +53,7 @@ def send_email_task(recipient, subject, body):
 
 
 @celery_app.task(name='send_mass_mail')
-async def send_mass_mail(body):
+async def send_mass_mail(body: str) -> str:
     recipients = select(User).where(User.is_active)
     recipients = recipients.scalars().all()
     for recipient in recipients:
@@ -67,4 +67,4 @@ async def send_mass_mail(body):
 
         except Exception as e:
             return str(e)
-        return f'Email sent to {recipient.email}'
+    return 'Email sent to all users'

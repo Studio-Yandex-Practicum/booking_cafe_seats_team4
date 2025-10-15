@@ -33,24 +33,24 @@ class Settings:
     )
 
     # Media
-    MEDIA_PATH: Path = Path(os.getenv('MEDIA_PATH', '/media'))
+    MEDIA_PATH: Path = Path(os.getenv('MEDIA_PATH', '/media',))
 
     # Celery & RabbitMQ
     CELERY_BROKER_URL: str = os.getenv(
-        'CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672/'
+        'CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672/',
     )
     CELERY_RESULT_BACKEND: str = os.getenv(
-        'CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'
+        'CELERY_RESULT_BACKEND', 'redis://localhost:6379/0',
     )
 
     # SMTP
-    SMTP_HOST: str = os.getenv('SMTP_HOST', 'sandbox.smtp.mailtrap.io')
-    SMTP_PORT: int = int(os.getenv('SMTP_PORT', '2525'))
-    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', 'xxxxxxxxxxxxxx')
-    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'xxxxxxxxxxxxxx')
+    SMTP_HOST: str = os.getenv('SMTP_HOST', 'sandbox.smtp.mailtrap.io',)
+    SMTP_PORT: int = int(os.getenv('SMTP_PORT', '2525',))
+    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', 'xxxxxxxxxxxxxx',)
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'xxxxxxxxxxxxxx',)
 
     # Logging
-    LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
+    LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO',)
     LOG_FILE: str | None = os.getenv('LOG_FILE')
 
 

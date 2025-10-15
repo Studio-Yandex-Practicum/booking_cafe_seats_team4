@@ -1,21 +1,16 @@
 import uuid
 from pathlib import Path
 
-from fastapi import status, APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
+from api.deps import require_manager_or_admin
+from api.validators.media import (check_len_file, check_media_id,
+                                  media_allowed_content_type, media_exist)
 from celery_tasks.tasks import save_image
-from schemas.media import MediaUploadResponse
 from core.config import settings
 from models.user import User
-from api.deps import require_manager_or_admin
-from api.validators.media import (
-    media_allowed_content_type,
-    check_len_file,
-    check_media_id,
-    media_exist,
-)
-
+from schemas.media import MediaUploadResponse
 
 router = APIRouter(prefix='/media', tags=['media'])
 
@@ -27,7 +22,8 @@ async def upload_image(
     file: UploadFile = File(...),
     user: User = Depends(require_manager_or_admin),
 ):
-    """Эндпоинт загрузки изображений"""
+    """Эндпоинт загрузки изображений."""
+
     file = await media_allowed_content_type(file)
     contents = await check_len_file(file)
     media_id = str(uuid.uuid4())
@@ -45,7 +41,8 @@ async def upload_image(
 
 @router.get('/{media_id}')
 async def get_image(media_id: str):
-    """Получение изображения по ID"""
+    """Получение изображения по ID."""
+
     media_id = check_media_id(media_id)
     filename = f'{media_id}.jpg'
     file_path = MEDIA_PATH / filename
