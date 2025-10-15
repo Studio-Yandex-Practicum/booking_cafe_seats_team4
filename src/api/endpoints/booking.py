@@ -1,0 +1,106 @@
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.deps import get_current_user, require_manager_or_admin
+from api.validators.booking import (
+    booking_exists,
+    check_all_objects_id,
+    check_booking_date,
+)
+from core.db import get_session
+from crud.booking import booking_crud
+from models.user import User
+from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
+
+router = APIRouter(prefix='/booking', tags=['Бронирования'])
+
+
+@router.get('/', response_model=List[BookingInfo])
+async def get_list_booking(
+    show_all: Optional[bool] = False,
+    cafe_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> List[BookingInfo]:
+    """Получение списка бронирований.
+    Для администраторов и менеджеров - все бронирования (с возможностью
+    фильтрации), для обычных пользователей - только свои бронирования.
+    """
+    if not await require_manager_or_admin(user):
+        return await booking_crud.get_multi_booking(
+            session=session,
+            show_all=show_all,
+            cafe_id=cafe_id,
+            user_id=user.id,
+        )
+    return await booking_crud.get_multi_booking(
+        session=session,
+        show_all=show_all,
+        cafe_id=cafe_id,
+        user_id=user_id,
+    )
+
+
+@router.post('/', response_model=BookingInfo)
+async def create_booking(
+    booking: BookingCreate,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> BookingInfo:
+    """Создает новое бронирования.
+    Только для авторизированных пользователей.
+    """
+    await check_booking_date(booking.booking_date, session)
+    await check_all_objects_id(
+        booking.slots_id,
+        booking.tables_id,
+        booking.cafe_id,
+        session,
+        )
+    new_booking = await booking_crud.create(
+        booking,
+        user,
+        session,
+    )
+    return new_booking
+
+
+@router.get('/{booking_id}', response_model=BookingInfo)
+async def get_booking(
+    booking_id: int,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> BookingInfo:
+    """Получение информации о бронировании по его ID.
+    Для администраторов и менеджеров - доступны все бронирования,
+    для обычных пользователей - только свои бронирования.
+    """
+    if not await require_manager_or_admin(user):
+        booking = await booking_crud.get_booking_current_user(
+            booking_id, user, session,
+            )
+    booking = await booking_exists(booking_id, session)
+    return booking
+
+
+@router.patch('/{booking_id}', response_model=BookingInfo)
+async def update_booking(
+    booking_id: int,
+    obj_in: BookingUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> BookingInfo:
+    """Обновление информации о бронировании по его ID.
+    Для администраторов и менеджеров - доступны все бронирования,
+    для обычных пользователей - только свои бронирования.
+    """
+    if not await require_manager_or_admin(user):
+        booking = await booking_crud.get_booking_current_user(
+            booking_id, session,
+        )
+    booking = await booking_exists(booking_id, session)
+    update_booking = await booking_crud.update(booking.id, obj_in, session)
+    return update_booking

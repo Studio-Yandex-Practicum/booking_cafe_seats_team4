@@ -18,7 +18,7 @@ class Cafe(BaseModel):
 
     # Был ForeignKey('media.id') + relationship('Media')
     # Стало: внешний ИД объекта, который хранится вне нашей БД
-    photo_id = Column(PG_UUID(as_uuid=True), nullable=True)
+    photo_id = Column(UUID(as_uuid=True), nullable=True)
 
     tables = relationship(
         'Table',
