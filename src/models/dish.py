@@ -1,9 +1,6 @@
 from sqlalchemy import (
-    Boolean,
     Column,
-    ForeignKey,
     Integer,
-    Numeric,
     String,
     Text,
 )
@@ -19,17 +16,10 @@ class Dish(BaseModel):
 
     __tablename__ = 'dishes'
 
-    cafe_id = Column(
-        Integer,
-        ForeignKey('cafes.id', ondelete='CASCADE'),
-        nullable=False,
-    )
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    price = Column(Numeric(10, 2), nullable=False)
-
-    is_available = Column(Boolean, default=True, nullable=False)
-    media_id = Column(UUID(as_uuid=True), nullable=True)
+    price = Column(Integer, nullable=False)
+    photo_id = Column(UUID(as_uuid=True), nullable=False)
 
     cafes = relationship(
         'Cafe',

@@ -4,6 +4,9 @@ PHONE_MAX = 32
 TG_ID_MAX = 64
 PASSWORD_HASH_MAX = 255
 CAFE_NAME_MAX = 255
+NAME_MIN = 1
+NAME_MAX = 50
+DESCRIPTION_MIN = 10
 
 CK_USERS_CONTACT_REQUIRED = 'ck_users_contact_required'
 UQ_CAFE_MANAGER = 'uq_cafe_manager_cafe_user'
