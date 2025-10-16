@@ -11,7 +11,7 @@ async def authenticate_user(
     login: str,
     password: str,
 ) -> User:
-    """Найти пользователя, проверить пароль."""
+    """Найти пользователя по email/phone и проверить пароль и активность."""
     login = login.strip()
 
     stmt = (
@@ -23,7 +23,7 @@ async def authenticate_user(
 
     invalid = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail='Invalid credentials',
+        detail='Неверный логин или пароль',
     )
 
     if user is None:
@@ -35,7 +35,7 @@ async def authenticate_user(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Inactive user',
+            detail='Пользователь неактивен',
         )
 
     return user
