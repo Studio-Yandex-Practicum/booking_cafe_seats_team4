@@ -4,8 +4,11 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from .cafe import TableShortInfo  # noqa
+from schemas.cafe import CafeShortInfo
+from schemas.user import UserShortInfo
+
 from .slots import TimeSlotShortInfo  # noqa
+from .table import TableShortInfo  # noqa
 from .validators import validate_date_not_past, validate_positive_number
 
 
@@ -92,8 +95,8 @@ class BookingShortInfo(BaseModel):
 class BookingInfo(BookingShortInfo):
     """Полная информация о бронировании."""
 
-    user_id: int
-    cafe_id: int
+    user_id: UserShortInfo
+    cafe_id: CafeShortInfo
     tables: List['TableShortInfo']
     slots: List['TimeSlotShortInfo']
     guest_number: int
