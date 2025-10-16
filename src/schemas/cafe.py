@@ -11,7 +11,10 @@ class CafeBase(BaseModel):
     """Базовая схема Кафе."""
 
     name: str = Field(
-        ..., max_length=200, description='Название кафе', example='Кофемания',
+        ...,
+        max_length=200,
+        description='Название кафе',
+        example='Кофемания',
     )
     address: str = Field(
         ...,

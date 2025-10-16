@@ -1,9 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
+from api.exceptions import err
 from api.validators.users import (
     ensure_contact_present_on_create,
     ensure_user_active,
@@ -37,8 +39,19 @@ async def create_user(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserInfo:
     """Создаёт нового пользователя (через CRUD)."""
+    # Требуем хотя бы один контакт (email или phone)
     ensure_contact_present_on_create(payload)
-    return await user_crud.create_with_hash(payload, session)
+
+    # Создание; при дубле email/phone отдаём 400 CustomError
+    try:
+        return await user_crud.create_with_hash(payload, session)
+    except IntegrityError:
+        await session.rollback()
+        raise err(
+            'USER_DUPLICATE',
+            'Пользователь с таким email или телефоном уже существует',
+            400,
+        )
 
 
 @router.get('/me', response_model=UserInfo, summary='Текущий пользователь')
@@ -57,10 +70,7 @@ async def patch_me(
 ) -> UserInfo:
     """Позволяет частично изменить свои данные."""
     if payload.role is not None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Changing own role is forbidden',
-        )
+        raise err('FORBIDDEN', 'Запрещено изменять собственную роль', 403)
     return await user_crud.update_with_logic(current, payload, session)
 
 

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from api import api_router
+from api.exceptions import install as install_exception_handlers
 from core.config import settings
 from core.logging import get_logger, setup_logging
 
@@ -27,6 +28,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title='Booking Cafe API', lifespan=lifespan)
 """Основное приложение FastAPI."""
+
+install_exception_handlers(app)
 
 
 @app.get('/', tags=['health'])
