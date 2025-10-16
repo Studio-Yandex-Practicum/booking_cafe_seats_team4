@@ -14,7 +14,9 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
     """CRUD-операции для модели Table с поддержкой загрузки кафе."""
 
     async def get_multi(
-        self, session: AsyncSession, **filters: Any,
+        self,
+        session: AsyncSession,
+        **filters: Any,
     ) -> List[Table]:
         """Получает список столов с подгрузкой связанного кафе."""
         query = select(self.model).options(selectinload(self.model.cafe))
@@ -27,7 +29,9 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         return result.scalars().all()
 
     async def get(
-        self, obj_id: int, session: AsyncSession,
+        self,
+        obj_id: int,
+        session: AsyncSession,
     ) -> Table | None:
         """Получает один стол по ID с подгрузкой кафе."""
         query = (

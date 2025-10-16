@@ -32,7 +32,8 @@ async def get_all_tables_in_cafe(
     )
     if tables is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Кафе не найдено',
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Кафе не найдено',
         )
     return tables
 
@@ -78,7 +79,8 @@ async def create_table(
     """Создает новый стол в указанном кафе."""
     table_in.cafe_id = cafe_id
     return await TableService.create_table(
-        session=session, table_in=table_in,
+        session=session,
+        table_in=table_in,
     )
 
 
@@ -96,7 +98,9 @@ async def update_table(
 ) -> TableInfo:
     """Обновляет стол по ID с проверкой принадлежности к кафе."""
     table = await TableService.update_table(
-        session=session, table_id=table_id, table_in=table_in,
+        session=session,
+        table_id=table_id,
+        table_in=table_in,
     )
     if not table or table.cafe.id != cafe_id:
         raise HTTPException(

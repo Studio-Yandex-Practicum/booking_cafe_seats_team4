@@ -25,7 +25,9 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
         return result.scalar_one_or_none()
 
     async def get_multi(
-            self, session: AsyncSession, **kwargs: Any,
+        self,
+        session: AsyncSession,
+        **kwargs: Any,
     ) -> List[Cafe]:
         """Получение всех кафе с загрузкой связанных менеджеров."""
         query = select(self.model).options(selectinload(self.model.managers))
@@ -54,7 +56,10 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
         return db_cafe
 
     async def update(
-        self, db_obj: Cafe, obj_in: CafeUpdate, session: AsyncSession,
+        self,
+        db_obj: Cafe,
+        obj_in: CafeUpdate,
+        session: AsyncSession,
     ) -> Cafe:
         """Обновление кафе и связи managers."""
         update_data = obj_in.model_dump(exclude_unset=True)
