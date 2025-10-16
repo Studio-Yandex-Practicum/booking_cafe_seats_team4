@@ -14,8 +14,8 @@ from api.validators.slots import (
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
-from schemas.user import UserRole
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
+from schemas.user import UserRole
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 
@@ -32,7 +32,6 @@ async def list_slots(
     session: Annotated[AsyncSession, Depends(get_session)],
     show_all: bool = False,
 ) -> List[TimeSlotInfo]:
-
     """Список активных или всех временных слотов конкретного кафе."""
     cafe = await cafe_exists(cafe_id, session)
 

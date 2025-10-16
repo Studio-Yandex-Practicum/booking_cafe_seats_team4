@@ -36,14 +36,25 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         logger.info('Сессия открыта')
         try:
             yield session
-            await session.commit()
-            logger.info('Изменения в бд зафиксированы.')
-        except Exception as err:
-            logger.error(f'Ошибка в сессии: {err}')
+            # Коммит убираем отсюда. Коммитить нужно в CRUD-слое,
+            # где происходит изменение данных. Зависимость не должна
+            # неявно коммитить всё подряд.
+            # await session.commit()
+        except HTTPException as e:
+            # Если это HTTPException, его нужно просто пробросить дальше.
+            # Не логируем его как ошибку,
+            # т.к. это ожидаемое поведение (404, 403 и т.д.).
+            # На всякий случай, если были изменения до ошибки
             await session.rollback()
+            logger.info(f'HTTP исключение в сессии, откатываем: {e.detail}')
+            raise e
+        except Exception as err:
+            logger.error(f'Ошибка в сессии: {err}', exc_info=True)
+            await session.rollback()
+            # Можно выбросить свою кастомную 500 ошибку или стандартную
             raise HTTPException(
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=str(err),
+                detail='Internal Server Error',
             )
         finally:
             logger.info('Сессия закрыта.')

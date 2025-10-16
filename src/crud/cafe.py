@@ -14,6 +14,20 @@ from .base import CRUDBase
 class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
     """CRUD-операции для модели Cafe."""
 
+    async def get_by_name_and_address(
+        self,
+        session: AsyncSession,
+        *,
+        name: str,
+        address: str,
+    ) -> Cafe | None:
+        """Ищет кафе по точному совпадению имени и адреса."""
+        query = select(self.model).where(
+            self.model.name == name, self.model.address == address,
+        )
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
+
     async def get(self, obj_id: int, session: AsyncSession) -> Cafe | None:
         """Получение кафе с загрузкой связанных менеджеров."""
         query = (
@@ -64,7 +78,6 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
         """Обновление кафе и связи managers."""
         update_data = obj_in.model_dump(exclude_unset=True)
 
-        # Обновляем обычные поля
         simple_data = {
             k: v for k, v in update_data.items() if k != 'managers_id'
         }
@@ -72,7 +85,6 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
             if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
 
-        # Обрабатываем менеджеров
         if 'managers_id' in update_data:
             managers_id = update_data['managers_id']
             if not managers_id:

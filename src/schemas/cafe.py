@@ -1,82 +1,113 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import List, Optional
+from typing import Annotated, List, Set
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    StringConstraints,
+    field_validator,
+)
 
-from .user import UserShortInfo
+from core.constants import CAFE_ADDRESS_MAX, CAFE_NAME_MAX, PHONE_MAX
+from schemas.user import UserShortInfo
+
+CafeNameStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=2, max_length=CAFE_NAME_MAX,
+    ),
+]
+
+CafeAddressStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=5, max_length=CAFE_ADDRESS_MAX,
+    ),
+]
+
+CafePhoneStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        max_length=PHONE_MAX,
+    ),
+]
+
+CafeDescriptionStr = Annotated[str, StringConstraints(strip_whitespace=True)]
 
 
-class CafeBase(BaseModel):
-    """Базовая схема Кафе."""
+class CafeCreate(BaseModel):
+    """Схема для создания нового кафе."""
 
-    name: str = Field(
-        ...,
-        max_length=200,
-        description='Название кафе',
-        example='Кофемания',
+    name: CafeNameStr
+    address: CafeAddressStr
+    phone: CafePhoneStr
+    description: CafeDescriptionStr | None = None
+    photo_id: UUID | None = None
+    managers_id: Set[int] | None = None
+
+    @field_validator('description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        """Преобразует пустую строку в None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Кофейня 'Уют'",
+                "address": "г. Санкт-Петербург, Невский пр., д. 28",
+                "phone": "+7(812)555-35-35",
+                "description": "Лучший кофе и свежая выпечка в центре города.",
+                "photo_id": "123e4567-e89b-12d3-a456-426614174000",
+                "managers_id": [10, 15],
+            },
+        },
     )
-    address: str = Field(
-        ...,
-        max_length=300,
-        description='Адрес кафе',
-        example='г. Москва, ул. Ленина, д. 1',
-    )
-    phone: str = Field(
-        ...,
-        max_length=20,
-        description='Контактный телефон',
-        example='+7 (999) 123-45-67',
-    )
-    description: str = Field(
-        ...,
-        description='Подробное описание кафе',
-        example='Уютное место с авторскими десертами и свежеобжаренным кофе.',
-    )
-    photo_id: UUID = Field(
-        ...,
-        description='ID фотографии из медиа-хранилища',
-        example='f47ac10b-58cc-4372-a567-0e02b2c3d479',
-    )
-
-
-class CafeCreate(CafeBase):
-    """Схема создания Кафе."""
-
-    managers_id: List[int] = Field(..., description='Список ID менеджеров')
 
 
 class CafeUpdate(BaseModel):
-    """Схема обновления Кафе."""
+    """Схема для частичного обновления кафе."""
 
-    name: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    description: Optional[str] = None
-    photo_id: Optional[UUID] = None
-    managers_id: Optional[List[int]] = None
-    is_active: Optional[bool] = None
+    name: CafeNameStr | None = None
+    address: CafeAddressStr | None = None
+    phone: CafePhoneStr | None = None
+    description: CafeDescriptionStr | None = None
+    is_active: bool | None = None
+    photo_id: UUID | None = None
+    managers_id: Set[int] | None = None
+
+    @field_validator('description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        """Преобразует пустую строку в None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
-class CafeShortInfo(CafeBase):
-    """Краткая информация о Кафе."""
+class CafeShortInfo(BaseModel):
+    """Краткая информация о кафе (для вложенных представлений)."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     address: str
     phone: str
-    description: str
-    photo_id: UUID
-
-    model_config = {
-        'from_attributes': True,  # <- Pydantic 2, заменяет orm_mode
-    }
+    description: str | None
+    photo_id: UUID | None
 
 
 class CafeInfo(CafeShortInfo):
-    """Полная информация о Кафе."""
+    """Полная информация о кафе для ответа API."""
 
-    managers: List[UserShortInfo]
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    managers: List[UserShortInfo] = []
