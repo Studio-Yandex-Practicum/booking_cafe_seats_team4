@@ -1,15 +1,16 @@
 from datetime import date
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud.booking import booking_crud
-from models.booking import Booking, BookingStatus
+from models import _booking, _cafe, _slots, _table
+from models.booking import BookingStatus
 
 
-async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
+async def booking_exists(booking_id: int, session: AsyncSession) -> _booking:
     """Проверяет, что бронь существует и активна."""
-    booking = await session.get(Booking, booking_id)
+    booking = await session.get(_booking, booking_id)
     if booking is None or booking.status != BookingStatus.ACTIVE.value:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -19,26 +20,67 @@ async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
 
 
 async def check_all_objects_id(
-        slots_id: list[int],
-        tables_id: list[int],
-        cafe_id: int,
-        session: AsyncSession) -> None:
-    pass
+    objects_dict: dict,
+    session: AsyncSession,
+) -> None:
+    cafe_id = objects_dict[_cafe]
+    slots_id = objects_dict[_slots]
+    tables_id = objects_dict[_table]
+    cafe = await session.get(_cafe, cafe_id)
+    if cafe is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Нет кафе с ID: {cafe_id}',
+        )
+    for id in slots_id:
+        slot = await session.get(_slots, id)
+        if slot is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f'Нет временного слота с ID: {id}',
+            )
+    for id in tables_id:
+        table = await session.get(_table, id)
+        if table is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f'Нет стола с ID: {id}',
+            )
+    await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+
+
+async def check_booking_conflicts(
+    cafe_id: int,
+    slots_id: list[int],
+    tables_id: list[int],
+    session: AsyncSession,
+) -> None:
+    """Проверяет наличие конфликтующих бронирований."""
+    stmt = select(_booking).where(
+        _booking.cafe_id == cafe_id,
+        _booking.slots_id.in_(slots_id),
+        _booking.tables_id.in_(tables_id),
+        _booking.status == BookingStatus.ACTIVE.value,
+    )
+    result = await session.execute(stmt)
+    existing_bookings = result.scalars().all()
+    if existing_bookings:
+        conflicting_slots = list(set(b.slots_id for b in existing_bookings))
+        conflicting_tables = list(set(b.tables_id for b in existing_bookings))
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Найдены конфликтующие бронирования. "
+                f"Слоты: {conflicting_slots}, "
+                f"Столы: {conflicting_tables}"
+            ),
+            )
 
 
 async def check_booking_date(
         booking_date: date,
-        session: AsyncSession,
 ) -> None:
-    booking = await booking_crud.get_booking_by_date(
-        booking_date,
-        session,
-    )
-    if booking is not None:
-        raise HTTPException(
-            status_code=400,
-            detail='Бронирование на эту дату уже сушествует!',
-        )
+    """Проверка даты бронирования."""
     if booking_date < date.today():
         raise HTTPException(
             status_code=400,

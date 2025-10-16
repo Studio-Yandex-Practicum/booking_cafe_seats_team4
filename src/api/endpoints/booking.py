@@ -11,7 +11,7 @@ from api.validators.booking import (
 )
 from core.db import get_session
 from crud.booking import booking_crud
-from models.user import User
+from models import _cafe, _slots, _table, _user
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
@@ -23,7 +23,7 @@ async def get_list_booking(
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: _user = Depends(get_current_user),
 ) -> List[BookingInfo]:
     """Получение списка бронирований.
     Для администраторов и менеджеров - все бронирования (с возможностью
@@ -48,16 +48,17 @@ async def get_list_booking(
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Создает новое бронирования.
     Только для авторизированных пользователей.
     """
     await check_booking_date(booking.booking_date, session)
     await check_all_objects_id(
-        booking.slots_id,
-        booking.tables_id,
-        booking.cafe_id,
+        {_cafe: booking.cafe_id,
+         _slots: booking.slots_id,
+         _table: booking.tables_id,
+         },
         session,
         )
     new_booking = await booking_crud.create(
@@ -72,7 +73,7 @@ async def create_booking(
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Получение информации о бронировании по его ID.
     Для администраторов и менеджеров - доступны все бронирования,
@@ -91,7 +92,7 @@ async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(get_current_user),
+    user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Обновление информации о бронировании по его ID.
     Для администраторов и менеджеров - доступны все бронирования,
