@@ -33,7 +33,7 @@ def save_image(image_data: bytes, media_id: str):
     except Exception as e:
         return {
             'media_id': media_id,
-            'error': str(e)
+            'error': str(e),
         }
 
 

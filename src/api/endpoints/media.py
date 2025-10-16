@@ -5,8 +5,12 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
 from api.deps import require_manager_or_admin
-from api.validators.media import (check_len_file, check_media_id,
-                                  media_allowed_content_type, media_exist)
+from api.validators.media import (
+    check_len_file,
+    check_media_id,
+    media_allowed_content_type,
+    media_exist,
+)
 from celery_tasks.tasks import save_image
 from core.config import settings
 from models.user import User
@@ -23,7 +27,6 @@ async def upload_image(
     user: User = Depends(require_manager_or_admin),
 ):
     """Эндпоинт загрузки изображений."""
-
     file = await media_allowed_content_type(file)
     contents = await check_len_file(file)
     media_id = str(uuid.uuid4())
@@ -35,14 +38,13 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'Ошибка при обработке изображения: {str(e)}'
+            detail=f'Ошибка при обработке изображения: {str(e)}',
         )
 
 
 @router.get('/{media_id}')
 async def get_image(media_id: str):
     """Получение изображения по ID."""
-
     media_id = check_media_id(media_id)
     filename = f'{media_id}.jpg'
     file_path = MEDIA_PATH / filename
@@ -50,5 +52,5 @@ async def get_image(media_id: str):
     return FileResponse(
         path=file_path,
         media_type='image/jpeg',
-        filename=f'{media_id}.jpg'
+        filename=f'{media_id}.jpg',
     )
