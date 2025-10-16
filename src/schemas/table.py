@@ -1,39 +1,44 @@
-from datetime import datetime
-from typing import Optional
+from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Annotated, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from .cafe import CafeShortInfo
 
+TableDescriptionStr = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+]
 
-class TableBase(BaseModel):
-    """Базовая схема Стола."""
-
-    description: str
-    seat_number: int = Field(..., gt=0)
+PositiveInt = Annotated[int, Field(gt=0)]
 
 
-class TableCreate(TableBase):
+class TableCreate(BaseModel):
     """Схема создания Стола."""
 
-    cafe_id: int
+    description: TableDescriptionStr
+    seat_number: PositiveInt
 
 
 class TableUpdate(BaseModel):
     """Схема обновления Стола."""
 
     cafe_id: Optional[int] = None
-    description: Optional[str] = None
-    seat_number: Optional[int] = None
+    description: Optional[TableDescriptionStr] = None
+    seat_number: Optional[PositiveInt] = None
     is_active: Optional[bool] = None
 
 
-class TableShortInfo(TableBase):
+class TableShortInfo(BaseModel):
     """Краткая информация о Столе."""
 
-    id: int
+    model_config = ConfigDict(from_attributes=True)
 
-    model_config = {'from_attributes': True}
+    id: int
+    description: str
+    seat_number: int
 
 
 class TableInfo(TableShortInfo):

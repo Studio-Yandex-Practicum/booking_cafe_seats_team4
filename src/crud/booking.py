@@ -18,7 +18,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         query = select(Booking)
         show_all = kwargs.pop('show_all', False)
         if not show_all:
-            query = query.where(Booking.is_active == True)
+            query = query.where(Booking.is_active)
         for field, value in kwargs.items():
             if hasattr(self.model, field) and value is not None:
                 query = query.where(getattr(self.model, field) == value)
@@ -33,8 +33,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 Booking.booking_date == bookibg_date,
             ),
         )
-        booking = query.scalars().first()
-        return booking
+        return query.scalars().first()
 
     async def get_booking_current_user(
             self, booking_id: int,  user: User, session: AsyncSession,
@@ -45,8 +44,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 Booking.user_id == user.id,
             ),
         )
-        booking = query.scalars().first()
-        return booking
+        return query.scalars().first()
 
 
 booking_crud = CRUDBooking(Booking)

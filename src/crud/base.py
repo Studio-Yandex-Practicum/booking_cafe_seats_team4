@@ -74,7 +74,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await session.refresh(db_obj)
         return db_obj
 
-    async def deactivate(self, db_obj: ModelType, session: AsyncSession) -> ModelType:
+    async def deactivate(
+        self,
+        db_obj: ModelType,
+        session: AsyncSession,
+    ) -> ModelType:
         """Деактивация обьекта путем изменения поля is_active."""
         if not hasattr(db_obj, 'is_active'):
             raise AttributeError(
