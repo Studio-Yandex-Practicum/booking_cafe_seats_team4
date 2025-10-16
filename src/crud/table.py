@@ -13,6 +13,27 @@ from .base import CRUDBase
 class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
     """CRUD-операции для модели Table с поддержкой загрузки кафе."""
 
+    async def create(
+        self,
+        obj_in: TableCreate,
+        session: AsyncSession,
+        *,
+        cafe_id: int,
+    ) -> Table:
+        """Создает новый стол, добавляя cafe_id из URL.
+        Переопределяет базовый метод create.
+        """
+        obj_in_data = obj_in.model_dump()
+
+        obj_in_data['cafe_id'] = cafe_id
+
+        db_obj = self.model(**obj_in_data)
+
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+        return db_obj
+
     async def get_multi(
         self,
         session: AsyncSession,

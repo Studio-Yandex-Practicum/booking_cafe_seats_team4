@@ -56,7 +56,7 @@ async def validate_no_time_overlap(
     payload,
     session: AsyncSession,
     exclude_id: int | None = None,
-):
+) -> None:
     """Проверяет, что новый слот не пересекается по времени с существующими."""
     stmt = select(Slot).where(Slot.cafe_id == payload.cafe_id)
     if exclude_id:
