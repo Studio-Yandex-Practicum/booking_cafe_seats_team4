@@ -45,7 +45,9 @@ async def get_all_cafes(
         ),
     ] = False,
 ) -> List[CafeInfo]:
-    """Получение списка кафе. Для администраторов и менеджеров - все кафе
+    """Получение списка кафе.
+
+    Для администраторов и менеджеров - все кафе
     (с возможностью выбора), для пользователей - только активные.
     """
     return await CafeService.get_all_cafes(
@@ -72,7 +74,6 @@ async def get_all_cafes(
 async def create_cafe(
     cafe_in: CafeCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Создает новое кафе. Только для администраторов и менеджеров."""
@@ -102,6 +103,7 @@ async def get_cafe_by_id(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CafeInfo:
     """Получение информации о кафе по его ID.
+
     Для администраторов и менеджеров - все кафе,
     для пользователей - только активные.
     """
@@ -130,10 +132,10 @@ async def update_cafe(
     ],
     cafe_in: CafeUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
-
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
+
     Только для администраторов и менеджеров.
     """
     return await CafeService.update_cafe(session, cafe_id, cafe_in)

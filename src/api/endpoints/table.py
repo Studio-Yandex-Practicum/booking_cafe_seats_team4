@@ -53,6 +53,7 @@ async def get_all_tables_in_cafe(
     ] = False,
 ) -> List[TableInfo]:
     """Получение списка доступных для бронирования столов в кафе.
+
     Для администраторов и менеджеров - все столы (с возможностью выбора),
     для пользователей - только активные.
     """
@@ -93,6 +94,7 @@ async def get_table_by_id(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TableInfo:
     """Получение информации о столе в кафе по его ID.
+
     Для администраторов и менеджеров - все столы,
     для пользователей - только активные.
     """
@@ -131,7 +133,9 @@ async def create_table(
 ) -> TableInfo:
     """Создание нового стола кафе. Только для администраторов и менеджеров."""
     return await TableService.create_table(
-        session=session, cafe_id=cafe_id, table_in=table_in,
+        session=session,
+        cafe_id=cafe_id,
+        table_in=table_in,
     )
 
 
@@ -166,6 +170,7 @@ async def update_table(
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> TableInfo:
     """Обновление информации о столе в кафе по его ID.
+
     Только для администраторов и менеджеров.
     """
     return await TableService.update_table(

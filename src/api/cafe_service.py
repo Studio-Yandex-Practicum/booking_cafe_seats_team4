@@ -1,5 +1,3 @@
-
-
 from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,11 +57,15 @@ class CafeService:
         session: AsyncSession,
         cafe_in: CafeCreate,
     ) -> CafeInfo:
-        """Создает новое кафе, проверяя на дубликат по имени/адресу
-        и обрабатывая ошибки, приходящие из CRUD-слоя.
+        """Создаёт новое кафе.
+
+        Проверяет на дубликат по имени и адресу и обрабатывает ошибки,
+        приходящие из CRUD-слоя.
         """
         existing_cafe = await cafe_crud.get_by_name_and_address(
-            session=session, name=cafe_in.name, address=cafe_in.address,
+            session=session,
+            name=cafe_in.name,
+            address=cafe_in.address,
         )
         if existing_cafe:
             raise err(
@@ -79,7 +81,6 @@ class CafeService:
             )
             return CafeInfo.model_validate(new_cafe_db, from_attributes=True)
         except ValueError as e:
-
             await session.rollback()
             raise err('INVALID_MANAGER_ID', str(e), 400)
 
@@ -89,7 +90,7 @@ class CafeService:
         cafe_id: int,
         cafe_in: CafeUpdate,
     ) -> CafeInfo:
-        """Обновляет кафе и возвращает его обновленное представление."""
+        """Обновляет кафе и возвращает его обновлённое представление."""
         db_cafe = await get_cafe_or_404(cafe_id, session)
 
         updated_cafe_db = await cafe_crud.update(

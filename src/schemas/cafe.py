@@ -17,14 +17,18 @@ from schemas.user import UserShortInfo
 CafeNameStr = Annotated[
     str,
     StringConstraints(
-        strip_whitespace=True, min_length=2, max_length=CAFE_NAME_MAX,
+        strip_whitespace=True,
+        min_length=2,
+        max_length=CAFE_NAME_MAX,
     ),
 ]
 
 CafeAddressStr = Annotated[
     str,
     StringConstraints(
-        strip_whitespace=True, min_length=5, max_length=CAFE_ADDRESS_MAX,
+        strip_whitespace=True,
+        min_length=5,
+        max_length=CAFE_ADDRESS_MAX,
     ),
 ]
 
@@ -59,13 +63,13 @@ class CafeCreate(BaseModel):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "name": "Кофейня 'Уют'",
-                "address": "г. Санкт-Петербург, Невский пр., д. 28",
-                "phone": "+7(812)555-35-35",
-                "description": "Лучший кофе и свежая выпечка в центре города.",
-                "photo_id": "123e4567-e89b-12d3-a456-426614174000",
-                "managers_id": [10, 15],
+            'example': {
+                'name': "Кофейня 'Уют'",
+                'address': 'г. Санкт-Петербург, Невский пр., д. 28',
+                'phone': '+7(812)555-35-35',
+                'description': 'Лучший кофе и свежая выпечка в центре города.',
+                'photo_id': '123e4567-e89b-12d3-a456-426614174000',
+                'managers_id': [10, 15],
             },
         },
     )

@@ -20,11 +20,11 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         *,
         cafe_id: int,
     ) -> Table:
-        """Создает новый стол, добавляя cafe_id из URL.
-        Переопределяет базовый метод create.
+        """Создает новый стол.
+
+        Добавляет `cafe_id` из URL и переопределяет базовый метод create.
         """
         obj_in_data = obj_in.model_dump()
-
         obj_in_data['cafe_id'] = cafe_id
 
         db_obj = self.model(**obj_in_data)

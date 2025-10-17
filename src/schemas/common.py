@@ -7,7 +7,8 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 ErrorCodeStr = Annotated[
     str,
     StringConstraints(
-        strip_whitespace=True, pattern=r'^[A-Z0-9_]+$',
+        strip_whitespace=True,
+        pattern=r'^[A-Z0-9_]+$',
     ),
 ]
 

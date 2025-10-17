@@ -1,7 +1,7 @@
 """init fresh
 
 Revision ID: d03009fd0dd0
-Revises: 
+Revises:
 Create Date: 2025-10-09 22:43:45.522521
 
 """

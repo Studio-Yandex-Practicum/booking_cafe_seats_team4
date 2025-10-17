@@ -25,7 +25,7 @@ MEDIA_PATH = Path(settings.MEDIA_PATH)
 async def upload_image(
     file: UploadFile = File(...),
     user: User = Depends(require_manager_or_admin),
-):
+) -> MediaUploadResponse:
     """Эндпоинт загрузки изображений."""
     file = await media_allowed_content_type(file)
     contents = await check_len_file(file)
@@ -43,7 +43,7 @@ async def upload_image(
 
 
 @router.get('/{media_id}')
-async def get_image(media_id: str):
+async def get_image(media_id: str) -> FileResponse:
     """Получение изображения по ID."""
     media_id = check_media_id(media_id)
     filename = f'{media_id}.jpg'

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import err
+from api.exceptions import forbidden, unprocessable
 from api.validators.auth import authenticate_user
 from core.db import get_session
 from core.security import create_access_token
@@ -25,19 +25,11 @@ async def login(
     try:
         user = await authenticate_user(session, form.login, form.password)
     except HTTPException as e:
-        # По OpenAPI: неверные 422, неактивный 403
+        # По OpenAPI: неверные - 422, неактивный - 403
         if e.status_code == 401:
-            raise err(
-                'AUTH_INVALID_CREDENTIALS',
-                'Неверный логин или пароль',
-                422,
-            )
+            raise unprocessable('Неверный логин или пароль')
         if e.status_code == 403:
-            raise err(
-                'AUTH_INACTIVE_USER',
-                'Пользователь неактивен',
-                403,
-            )
+            raise forbidden('Пользователь неактивен')
         raise
 
     token = create_access_token(subject=str(user.id))
