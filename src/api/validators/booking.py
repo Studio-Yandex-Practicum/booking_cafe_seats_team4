@@ -23,29 +23,37 @@ async def check_all_objects_id(
     objects_dict: dict,
     session: AsyncSession,
 ) -> None:
+    """Проверяет существование кафе, слотов и столов по их ID.
+
+    Затем валидирует отсутствие конфликтующих бронирований.
+    """
     cafe_id = objects_dict[_cafe]
     slots_id = objects_dict[_slots]
     tables_id = objects_dict[_table]
+
     cafe = await session.get(_cafe, cafe_id)
     if cafe is None:
         raise HTTPException(
             status_code=404,
             detail=f'Нет кафе с ID: {cafe_id}',
         )
-    for id in slots_id:
-        slot = await session.get(_slots, id)
+
+    for slot_id in slots_id:
+        slot = await session.get(_slots, slot_id)
         if slot is None:
             raise HTTPException(
                 status_code=404,
-                detail=f'Нет временного слота с ID: {id}',
+                detail=f'Нет временного слота с ID: {slot_id}',
             )
-    for id in tables_id:
-        table = await session.get(_table, id)
+
+    for table_id in tables_id:
+        table = await session.get(_table, table_id)
         if table is None:
             raise HTTPException(
                 status_code=404,
-                detail=f'Нет стола с ID: {id}',
+                detail=f'Нет стола с ID: {table_id}',
             )
+
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
 
 
@@ -64,23 +72,22 @@ async def check_booking_conflicts(
     )
     result = await session.execute(stmt)
     existing_bookings = result.scalars().all()
+
     if existing_bookings:
-        conflicting_slots = list(set(b.slots_id for b in existing_bookings))
-        conflicting_tables = list(set(b.tables_id for b in existing_bookings))
+        conflicting_slots = list({b.slots_id for b in existing_bookings})
+        conflicting_tables = list({b.tables_id for b in existing_bookings})
         raise HTTPException(
             status_code=409,
             detail=(
-                f"Найдены конфликтующие бронирования. "
-                f"Слоты: {conflicting_slots}, "
-                f"Столы: {conflicting_tables}"
+                'Найдены конфликтующие бронирования. '
+                f'Слоты: {conflicting_slots}, '
+                f'Столы: {conflicting_tables}'
             ),
-            )
+        )
 
 
-async def check_booking_date(
-        booking_date: date,
-) -> None:
-    """Проверка даты бронирования."""
+async def check_booking_date(booking_date: date) -> None:
+    """Проверяет, что дата бронирования не в прошлом."""
     if booking_date < date.today():
         raise HTTPException(
             status_code=400,

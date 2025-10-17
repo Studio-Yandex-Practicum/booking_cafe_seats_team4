@@ -1,20 +1,57 @@
 from __future__ import annotations
 
+from typing import Final
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-DUPLICATE_MSG = 'Пользователь с таким email или телефоном уже существует'
+DEFAULT_MESSAGES: Final[dict[int, str]] = {
+    400: 'Некорректный запрос',
+    401: 'Требуется авторизация',
+    403: 'Недостаточно прав',
+    404: 'Не найдено',
+    422: 'Неверные данные запроса',
+}
+
+DUPLICATE_MSG: Final[str] = (
+    'Пользователь с таким email или телефоном уже существует'
+)
 
 
-def err(code: str, message: str, status: int) -> HTTPException:
-    """Сформировать HTTPException в формате {'code','message'}."""
+def err(code: int, message: str, status: int) -> HTTPException:
+    """HTTPException с detail={'code': int, 'message': str}."""
     return HTTPException(
         status_code=status,
         detail={'code': code, 'message': message},
     )
+
+
+def bad_request(message: str) -> HTTPException:
+    """400 Bad Request."""
+    return err(400, message, 400)
+
+
+def unauthorized(message: str) -> HTTPException:
+    """401 Unauthorized."""
+    return err(401, message, 401)
+
+
+def forbidden(message: str) -> HTTPException:
+    """403 Forbidden."""
+    return err(403, message, 403)
+
+
+def not_found(message: str) -> HTTPException:
+    """404 Not Found."""
+    return err(404, message, 404)
+
+
+def unprocessable(message: str) -> HTTPException:
+    """422 Unprocessable Entity."""
+    return err(422, message, 422)
 
 
 def install(app: FastAPI) -> None:
@@ -35,23 +72,13 @@ def install(app: FastAPI) -> None:
                 content=exc.detail,
             )
 
-        defaults: dict[int, tuple[str, str]] = {
-            400: ('BAD_REQUEST', 'Некорректный запрос'),
-            401: ('UNAUTHORIZED', 'Требуется авторизация'),
-            403: ('FORBIDDEN', 'Недостаточно прав'),
-            404: ('NOT_FOUND', 'Не найдено'),
-            422: (
-                'UNPROCESSABLE_ENTITY',
-                'Неверные данные запроса',
-            ),
-        }
-        code, msg = defaults.get(exc.status_code, ('ERROR', 'Ошибка'))
+        message = DEFAULT_MESSAGES.get(exc.status_code, 'Ошибка')
         if isinstance(exc.detail, str):
-            msg = exc.detail
+            message = exc.detail
 
         return JSONResponse(
             status_code=exc.status_code,
-            content={'code': code, 'message': msg},
+            content={'code': int(exc.status_code), 'message': message},
         )
 
     @app.exception_handler(RequestValidationError)
@@ -61,10 +88,7 @@ def install(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=422,
-            content={
-                'code': 'VALIDATION_ERROR',
-                'message': 'Неверные данные запроса',
-            },
+            content={'code': 422, 'message': 'Неверные данные запроса'},
         )
 
     @app.exception_handler(IntegrityError)
@@ -72,16 +96,16 @@ def install(app: FastAPI) -> None:
         _: Request,
         exc: IntegrityError,
     ) -> JSONResponse:
-        text = str(exc).lower()
-        if 'unique' in text or 'duplicate' in text:
+        txt = str(exc).lower()
+        if ('unique' in txt) or ('duplicate' in txt):
             return JSONResponse(
                 status_code=400,
-                content={'code': 'USER_DUPLICATE', 'message': DUPLICATE_MSG},
+                content={'code': 400, 'message': DUPLICATE_MSG},
             )
         return JSONResponse(
             status_code=400,
             content={
-                'code': 'DB_CONSTRAINT_VIOLATION',
+                'code': 400,
                 'message': 'Нарушение ограничений базы данных',
             },
         )

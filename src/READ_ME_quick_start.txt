@@ -18,7 +18,7 @@ docker compose up -d --build
 
 ```
 bash
-docker compose ps 
+docker compose ps
 ```
 
 # Создать суперпользователя

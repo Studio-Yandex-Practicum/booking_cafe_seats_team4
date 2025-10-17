@@ -12,7 +12,9 @@ async def get_cafe_or_404(cafe_id: int, session: AsyncSession) -> Cafe:
     cafe = await cafe_crud.get(obj_id=cafe_id, session=session)
     if cafe_id <= 0:
         raise err(
-            'INVALID_ID_FORMAT', 'ID должен быть положительным числом', 400,
+            'INVALID_ID_FORMAT',
+            'ID должен быть положительным числом',
+            400,
         )
     if not cafe:
         raise err('NOT_FOUND', 'Кафе не найдено', 404)

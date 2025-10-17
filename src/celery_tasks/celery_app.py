@@ -3,10 +3,10 @@ from celery import Celery
 from core.config import settings
 
 celery_app = Celery(
-    "media_processor",
+    'media_processor',
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["celery_tasks.tasks"],
+    include=['celery_tasks.tasks'],
 )
 celery_app.conf.update(
     task_serializer='json',
