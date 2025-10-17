@@ -1,9 +1,10 @@
 from datetime import date
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.exceptions import err
 from models import _booking, _cafe, _slots, _table
 from models.booking import BookingStatus
 
@@ -12,10 +13,11 @@ async def booking_exists(booking_id: int, session: AsyncSession) -> _booking:
     """Проверяет, что бронь существует и активна."""
     booking = await session.get(_booking, booking_id)
     if booking is None or booking.status != BookingStatus.ACTIVE.value:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Такой брони нет или она не активна.',
-        )
+        return err(
+                404,
+                'Такой брони нет или она не активна.',
+                status.HTTP_404_NOT_FOUND,
+            )
     return booking
 
 
@@ -28,23 +30,26 @@ async def check_all_objects_id(
     tables_id = objects_dict[_table]
     cafe = await session.get(_cafe, cafe_id)
     if cafe is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f'Нет кафе с ID: {cafe_id}',
-        )
+        return err(
+                404,
+                f'Нет кафе с ID: {cafe_id}',
+                status.HTTP_404_NOT_FOUND,
+            )
     for id in slots_id:
         slot = await session.get(_slots, id)
         if slot is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f'Нет временного слота с ID: {id}',
+            return err(
+                404,
+                f'Нет временного слота с ID: {id}',
+                status.HTTP_404_NOT_FOUND,
             )
     for id in tables_id:
         table = await session.get(_table, id)
         if table is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f'Нет стола с ID: {id}',
+            return err(
+                404,
+                f'Нет стола с ID: {id}',
+                status.HTTP_404_NOT_FOUND,
             )
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
 
@@ -67,13 +72,12 @@ async def check_booking_conflicts(
     if existing_bookings:
         conflicting_slots = list(set(b.slots_id for b in existing_bookings))
         conflicting_tables = list(set(b.tables_id for b in existing_bookings))
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                f"Найдены конфликтующие бронирования. "
-                f"Слоты: {conflicting_slots}, "
-                f"Столы: {conflicting_tables}"
-            ),
+        return err(
+            422,
+            f"Найдены конфликтующие бронирования. "
+            f"Слоты: {conflicting_slots}, "
+            f"Столы: {conflicting_tables}",
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
 
 
@@ -82,7 +86,8 @@ async def check_booking_date(
 ) -> None:
     """Проверка даты бронирования."""
     if booking_date < date.today():
-        raise HTTPException(
-            status_code=400,
-            detail='Нельзя назначить бронь на прошедшую дату!',
-        )
+        return err(
+            422,
+            'Нельзя назначить бронь на прошедшую дату!',
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            )
