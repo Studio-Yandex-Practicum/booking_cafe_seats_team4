@@ -23,7 +23,8 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
     ) -> Cafe | None:
         """Ищет кафе по точному совпадению имени и адреса."""
         query = select(self.model).where(
-            self.model.name == name, self.model.address == address,
+            self.model.name == name,
+            self.model.address == address,
         )
         result = await session.execute(query)
         return result.scalar_one_or_none()

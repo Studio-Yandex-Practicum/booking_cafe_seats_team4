@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +55,7 @@ def slot_active(slot: Slot) -> None:
 
 
 async def validate_no_time_overlap(
-    payload,
+    payload: Any,
     session: AsyncSession,
     exclude_id: int | None = None,
 ) -> None:

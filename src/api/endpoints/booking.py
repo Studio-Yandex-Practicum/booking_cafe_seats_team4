@@ -26,6 +26,7 @@ async def get_list_booking(
     user: _user = Depends(get_current_user),
 ) -> List[BookingInfo]:
     """Получение списка бронирований.
+
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
@@ -51,22 +52,19 @@ async def create_booking(
     user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Создает новое бронирования.
+
     Только для авторизированных пользователей.
     """
     await check_booking_date(booking.booking_date, session)
     await check_all_objects_id(
-        {_cafe: booking.cafe_id,
-         _slots: booking.slots_id,
-         _table: booking.tables_id,
-         },
-        session,
-        )
-    new_booking = await booking_crud.create(
-        booking,
-        user,
+        {
+            _cafe: booking.cafe_id,
+            _slots: booking.slots_id,
+            _table: booking.tables_id,
+        },
         session,
     )
-    return new_booking
+    return await booking_crud.create(booking, user, session)
 
 
 @router.get('/{booking_id}', response_model=BookingInfo)
@@ -76,15 +74,17 @@ async def get_booking(
     user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Получение информации о бронировании по его ID.
+
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
     if not await require_manager_or_admin(user):
-        booking = await booking_crud.get_booking_current_user(
-            booking_id, user, session,
-            )
-    booking = await booking_exists(booking_id, session)
-    return booking
+        return await booking_crud.get_booking_current_user(
+            booking_id,
+            user,
+            session,
+        )
+    return await booking_exists(booking_id, session)
 
 
 @router.patch('/{booking_id}', response_model=BookingInfo)
@@ -95,13 +95,16 @@ async def update_booking(
     user: _user = Depends(get_current_user),
 ) -> BookingInfo:
     """Обновление информации о бронировании по его ID.
+
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
     if not await require_manager_or_admin(user):
-        booking = await booking_crud.get_booking_current_user(
-            booking_id, session,
+        await booking_crud.get_booking_current_user(
+            booking_id,
+            user,
+            session,
         )
+
     booking = await booking_exists(booking_id, session)
-    update_booking = await booking_crud.update(booking.id, obj_in, session)
-    return update_booking
+    return await booking_crud.update(booking.id, obj_in, session)

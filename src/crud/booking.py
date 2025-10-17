@@ -1,4 +1,3 @@
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,8 +11,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
     """CRUD для бронирования."""
 
     async def get_multi_booking(
-            self, session: AsyncSession, **kwargs: dict,
-            ) -> list[Booking]:
+        self,
+        session: AsyncSession,
+        **kwargs: dict,
+    ) -> list[Booking]:
         """Получение всех бронированний с дополнительными параметрами."""
         query = select(_booking)
         show_all = kwargs.pop('show_all', False)
@@ -26,8 +27,11 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         return result.scalars().all()
 
     async def get_booking_current_user(
-            self, booking_id: int,  user: _user, session: AsyncSession,
-            ) -> _booking:
+        self,
+        booking_id: int,
+        user: _user,
+        session: AsyncSession,
+    ) -> _booking:
         """Получение бронирования для конкретного юзера."""
         query = await session.execute(
             select(_booking).where(

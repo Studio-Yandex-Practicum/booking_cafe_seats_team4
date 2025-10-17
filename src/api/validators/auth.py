@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.exceptions import forbidden, unauthorized
 from core.security import verify_password
 from models.user import User
 
@@ -11,7 +11,7 @@ async def authenticate_user(
     login: str,
     password: str,
 ) -> User:
-    """Найти пользователя по email/phone и проверить пароль и активность."""
+    """Найти пользователя по email/phone."""
     login = login.strip()
 
     stmt = (
@@ -21,21 +21,13 @@ async def authenticate_user(
     )
     user = await session.scalar(stmt)
 
-    invalid = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail='Неверный логин или пароль',
-    )
-
     if user is None:
-        raise invalid
+        raise unauthorized('Неверный логин или пароль')
 
     if not verify_password(password, user.password_hash):
-        raise invalid
+        raise unauthorized('Неверный логин или пароль')
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Пользователь неактивен',
-        )
+        raise forbidden('Пользователь неактивен')
 
     return user

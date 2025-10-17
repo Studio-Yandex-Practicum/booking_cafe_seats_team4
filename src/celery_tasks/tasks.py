@@ -18,7 +18,12 @@ SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 
 @celery_app.task(name='save_image')
-def save_image(image_data: bytes, media_id: str):
+def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
+    """Сохранить картинку как JPEG `<media_id>.jpg`.
+
+    Возвращает словарь с ключом ``media_id``; при ошибке
+    дополнительно возвращает ключ ``error`` с текстом ошибки.
+    """
     try:
         image = Image.open(io.BytesIO(image_data))
         if image.mode != 'RGB':
@@ -26,19 +31,14 @@ def save_image(image_data: bytes, media_id: str):
         filename = f'{media_id}.jpg'
         file_path = MEDIA_PATH / filename
         image.save(file_path, 'JPEG', optimize=True)
-        return {
-            'media_id': media_id,
-        }
-
-    except Exception as e:
-        return {
-            'media_id': media_id,
-            'error': str(e),
-        }
+        return {'media_id': media_id}
+    except Exception as e:  # noqa: BLE001
+        return {'media_id': media_id, 'error': str(e)}
 
 
 @celery_app.task(name='send_email_task')
-def send_email_task(recipient: User, subject, body: str) -> str:
+def send_email_task(recipient: User, subject: str, body: str) -> str:
+    """Отправить одно письмо пользователю."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
@@ -46,14 +46,14 @@ def send_email_task(recipient: User, subject, body: str) -> str:
         message = f'Subject: {subject}\n\n{body}'
         server.sendmail('your_email@example.com', recipient, message)
         server.quit()
-
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return str(e)
     return f'Email sent to {recipient}'
 
 
 @celery_app.task(name='send_mass_mail')
 async def send_mass_mail(body: str) -> str:
+    """Разослать письмо всем активным пользователям."""
     recipients = select(User).where(User.is_active)
     recipients = recipients.scalars().all()
     for recipient in recipients:
@@ -64,7 +64,6 @@ async def send_mass_mail(body: str) -> str:
             message = f'Subject: {recipient.username}\n\n{body}'
             server.sendmail('your_email@example.com', recipient.email, message)
             server.quit()
-
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return str(e)
     return 'Email sent to all users'
