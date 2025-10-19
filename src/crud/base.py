@@ -73,7 +73,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """Деактивация обьекта путем изменения поля is_active."""
         if not hasattr(db_obj, 'is_active'):
             raise AttributeError(
-                f'Модель {self.model.__name__} не имеет поля is_active'
+                f'Модель {self.model.__name__} не имеет поля is_active.',
             )
 
         db_obj.is_active = False

@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.constants import NAME_MIN, NAME_MAX, DESCRIPTION_MIN
 from .cafe import CafeShortInfo
+from src.core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
 
 
 class DishBase(BaseModel):

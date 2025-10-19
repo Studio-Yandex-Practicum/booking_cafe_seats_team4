@@ -13,7 +13,7 @@ class CRUDSlot(CRUDBase[Slot, TimeSlotCreate, TimeSlotUpdate]):
         """Возвращает все активные слоты конкретного кафе."""
         stmt = select(Slot).where(
             Slot.cafe_id == cafe_id,
-            Slot.is_active.is_(True)
+            Slot.is_active.is_(True),
         )
         res = await session.execute(stmt)
         return res.scalars().all()

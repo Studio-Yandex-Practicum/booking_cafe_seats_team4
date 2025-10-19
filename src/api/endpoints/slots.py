@@ -2,18 +2,18 @@ from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from validators.slots import (
+    cafe_exists,
+    slot_active,
+    slot_exists,
+    user_can_manage_cafe,
+)
 
 from api.deps import require_manager_or_admin
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
-from validators.slots import (
-    cafe_exists,
-    slot_exists,
-    user_can_manage_cafe,
-    slot_active,
-)
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 
