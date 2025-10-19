@@ -1,11 +1,14 @@
 from typing import Iterable
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.security import hash_password
 from models.user import User
 from schemas.user import UserCreate, UserUpdate
+
+from src.api.deps import get_current_user
+from src.schemas.user import UserRole
 
 
 async def get_user_or_404(user_id: int, session: AsyncSession) -> User:
@@ -66,3 +69,12 @@ def apply_user_update(entity: User, update: UserUpdate) -> None:
     for field in _MUTABLE_FIELDS:
         if field in data:
             setattr(entity, field, data[field])
+
+
+def check_user_is_manager_or_admin(
+        user: User = Depends(get_current_user),
+) -> bool:
+    """Проверяет, что user является MANAGER или ADMIN."""
+    if user.role not in (int(UserRole.MANAGER), int(UserRole.ADMIN)):
+        return False
+    return True
