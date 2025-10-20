@@ -1,8 +1,10 @@
 from typing import Iterable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.exceptions import bad_request, forbidden, not_found
 from core.security import hash_password
 from models.user import User
 from schemas.user import UserCreate, UserUpdate
@@ -15,10 +17,7 @@ async def get_user_or_404(user_id: int, session: AsyncSession) -> User:
     """Вернуть пользователя по id или 404 Not Found."""
     user = await session.get(User, user_id)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found',
-        )
+        raise not_found('Пользователь не найден')
     return user
 
 
@@ -27,19 +26,13 @@ def ensure_contact_present_on_create(payload: UserCreate) -> None:
     email = (payload.email or '').strip()
     phone = (payload.phone or '').strip()
     if not (email or phone):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='email or phone is required',
-        )
+        raise bad_request('Необходимо указать email или телефон')
 
 
 def ensure_user_active(user: User) -> None:
     """Запретить операции над неактивным пользователем (403)."""
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Inactive user',
-        )
+        raise forbidden('Пользователь неактивен')
 
 
 _MUTABLE_FIELDS: Iterable[str] = (

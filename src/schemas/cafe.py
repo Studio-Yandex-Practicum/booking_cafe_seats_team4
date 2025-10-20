@@ -1,96 +1,117 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import List, Optional
+from typing import Annotated, List, Set
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    StringConstraints,
+    field_validator,
+)
 
-from .user import UserShortInfo
+from core.constants import CAFE_ADDRESS_MAX, CAFE_NAME_MAX, PHONE_MAX
+from schemas.user import UserShortInfo
+
+CafeNameStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=2,
+        max_length=CAFE_NAME_MAX,
+    ),
+]
+
+CafeAddressStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=5,
+        max_length=CAFE_ADDRESS_MAX,
+    ),
+]
+
+CafePhoneStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        max_length=PHONE_MAX,
+    ),
+]
+
+CafeDescriptionStr = Annotated[str, StringConstraints(strip_whitespace=True)]
 
 
-class CafeBase(BaseModel):
-    """Базовая схема Кафе."""
+class CafeCreate(BaseModel):
+    """Схема для создания нового кафе."""
 
-    name: str = Field(..., max_length=200)
-    address: str
-    phone: str = Field(..., max_length=20)
-    description: Optional[str] = None
-    photo_id: Optional[UUID] = None
+    name: CafeNameStr
+    address: CafeAddressStr
+    phone: CafePhoneStr
+    description: CafeDescriptionStr | None = None
+    photo_id: UUID | None = None
+    managers_id: Set[int] | None = None
 
+    @field_validator('description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        """Преобразует пустую строку в None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
-class CafeCreate(CafeBase):
-    """Схема создания Кафе."""
-
-    managers_id: List[int]
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'name': "Кофейня 'Уют'",
+                'address': 'г. Санкт-Петербург, Невский пр., д. 28',
+                'phone': '+7(812)555-35-35',
+                'description': 'Лучший кофе и свежая выпечка в центре города.',
+                'photo_id': '123e4567-e89b-12d3-a456-426614174000',
+                'managers_id': [10, 15],
+            },
+        },
+    )
 
 
 class CafeUpdate(BaseModel):
-    """Схема обновления Кафе."""
+    """Схема для частичного обновления кафе."""
 
-    name: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    description: Optional[str] = None
-    photo_id: Optional[UUID] = None
-    managers_id: Optional[List[int]] = None
-    is_active: Optional[bool] = None
+    name: CafeNameStr | None = None
+    address: CafeAddressStr | None = None
+    phone: CafePhoneStr | None = None
+    description: CafeDescriptionStr | None = None
+    is_active: bool | None = None
+    photo_id: UUID | None = None
+    managers_id: Set[int] | None = None
+
+    @field_validator('description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        """Преобразует пустую строку в None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class CafeShortInfo(BaseModel):
-    """Краткая информация о Кафе."""
+    """Краткая информация о кафе (для вложенных представлений)."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     address: str
     phone: str
-    description: Optional[str] = None
-    photo_id: Optional[UUID] = None
-    model_config = ConfigDict(from_attributes=True)
+    description: str | None
+    photo_id: UUID | None
 
 
 class CafeInfo(CafeShortInfo):
-    """Полная информация о Кафе."""
+    """Полная информация о кафе для ответа API."""
 
-    managers: List[UserShortInfo]
     is_active: bool
     created_at: datetime
     updated_at: datetime
-
-
-class TableBase(BaseModel):
-    """Базовая схема Стола."""
-
-    description: Optional[str] = None
-    seat_number: int
-
-
-class TableCreate(TableBase):
-    """Схема создания Стола."""
-
-    cafe_id: int
-
-
-class TableUpdate(BaseModel):
-    """Схема обновления Стола."""
-
-    cafe_id: Optional[int] = None
-    description: Optional[str] = None
-    seat_number: Optional[int] = None
-    is_active: Optional[bool] = None
-
-
-class TableShortInfo(BaseModel):
-    """Краткая информация о Столе."""
-
-    id: int
-    description: Optional[str] = None
-    seat_number: int
-    model_config = ConfigDict(from_attributes=True)
-
-
-class TableInfo(TableShortInfo):
-    """Полная информация о Столе."""
-
-    cafe: CafeShortInfo
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    managers: List[UserShortInfo] = []

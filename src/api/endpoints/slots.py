@@ -9,46 +9,70 @@ from validators.slots import (
     user_can_manage_cafe,
 )
 
-from api.deps import require_manager_or_admin
+from api.deps import get_current_user, require_manager_or_admin
+from api.validators.slots import (
+    cafe_exists,
+    slot_active,
+    slot_exists,
+    user_can_manage_cafe,
+    validate_no_time_overlap,
+)
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
+from schemas.user import UserRole
+
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 
 
-@router.get('', response_model=List[TimeSlotInfo])
+@router.get(
+    '',
+    response_model=List[TimeSlotInfo],
+    summary='Получить список временных слотов кафе',
+    description='Показывает слоты',
+)
 async def list_slots(
     cafe_id: int,
+    current_user: Annotated[User | None, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    show_all: bool = False,
 ) -> List[TimeSlotInfo]:
-    """Список активных временных слотов конкретного кафе (публичный доступ)."""
+    """Список активных или всех временных слотов конкретного кафе."""
     cafe = await cafe_exists(cafe_id, session)
-    return await slot_crud.get_by_cafe(cafe.id, session)
+
+    only_active = True
+    if show_all and current_user:
+        if current_user.role in (int(UserRole.ADMIN), int(UserRole.MANAGER)):
+            only_active = False
+
+    return await slot_crud.get_by_cafe(cafe.id, session, only_active)
 
 
 @router.post(
     '',
     response_model=TimeSlotInfo,
     status_code=status.HTTP_201_CREATED,
+    summary='Создать временной слот',
+    description='Создание доступно только менеджеру или администратору.',
 )
 async def create_slot(
     payload: TimeSlotCreate,
     current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
-    """Создание временного слота (только менеджер своего кафе или админ)."""
+    """Создание временного слота."""
     cafe = await cafe_exists(payload.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
-
-    new_slot = await slot_crud.create(payload, session)
-    return new_slot
+    await validate_no_time_overlap(payload, session)
+    return await slot_crud.create(payload, session)
 
 
 @router.get(
     '/{slot_id}',
     response_model=TimeSlotInfo,
+    summary='Получить слот по ID',
 )
 async def get_slot(
     slot_id: int,
@@ -63,6 +87,7 @@ async def get_slot(
 @router.patch(
     '/{slot_id}',
     response_model=TimeSlotInfo,
+    summary='Обновить слот или деактивировать',
 )
 async def update_slot(
     slot_id: int,
@@ -77,25 +102,11 @@ async def update_slot(
     cafe = await cafe_exists(slot.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
 
-    updated = await slot_crud.update(slot, payload, session)
-    return updated
+    # Проверка пересечения по времени
+    await validate_no_time_overlap(payload, session, exclude_id=slot_id)
 
+    # Обработка деактивации через PATCH
+    if payload.is_active is not None and payload.is_active is False:
+        return await slot_crud.deactivate(slot, session)
 
-@router.delete(
-    '/{slot_id}',
-    response_model=TimeSlotInfo,
-)
-async def deactivate_slot(
-    slot_id: int,
-    current_user: Annotated[User, Depends(require_manager_or_admin)],
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> TimeSlotInfo:
-    """Деактивировать (soft delete) временной слот."""
-    slot = await slot_exists(slot_id, session)
-    slot_active(slot)
-
-    cafe = await cafe_exists(slot.cafe_id, session)
-    user_can_manage_cafe(current_user, cafe)
-
-    deactivated = await slot_crud.deactivate(slot, session)
-    return deactivated
+    return await slot_crud.update(slot, payload, session)

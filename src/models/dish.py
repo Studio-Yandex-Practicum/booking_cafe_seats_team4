@@ -18,7 +18,13 @@ class Dish(BaseModel):
 
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
+<<<<<<< HEAD
     price = Column(Integer, nullable=False)
+=======
+    price = Column(Numeric(10, 2), nullable=False)
+
+    is_available = Column(Boolean, default=True, nullable=False)
+>>>>>>> develop
     photo_id = Column(UUID(as_uuid=True), nullable=False)
 
     cafes = relationship(
