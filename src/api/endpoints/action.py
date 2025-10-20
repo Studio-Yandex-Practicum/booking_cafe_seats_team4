@@ -5,17 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.actions_service import ActionService
 from api.deps import get_current_user, require_manager_or_admin
-# from api.responses import (
-#     CAFE_DUPLICATE_RESPONSE,
-#     FORBIDDEN_RESPONSE,
-#     INVALID_ID_RESPONSE,
-#     INVALID_MANAGER_ID_RESPONSE,
-#     NOT_FOUND_RESPONSE,
-#     SUCCESSFUL_RESPONSE,
-#     UNAUTHORIZED_RESPONSE,
-#     VALIDATION_ERROR_RESPONSE,
-# )
+from api.responses import (
+    FORBIDDEN_RESPONSE,
+    INVALID_ID_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    SUCCESSFUL_RESPONSE,
+    UNAUTHORIZED_RESPONSE,
+    VALIDATION_ERROR_RESPONSE,
+)
+from core.email_templates import ACTION_TEMPLATE
 from core.db import get_session
+from celery_tasks.tasks import send_mass_mail
 from models.user import User
 from schemas.action import ActionCreate, ActionInfo, ActionUpdate
 
@@ -26,11 +26,11 @@ router = APIRouter(prefix='/actions', tags=['Акции'])
     '/',
     response_model=List[ActionInfo],
     summary='Список акций',
-    # responses={
-    #     **UNAUTHORIZED_RESPONSE,
-    #     **VALIDATION_ERROR_RESPONSE,
-    #     **SUCCESSFUL_RESPONSE,
-    # },
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        **VALIDATION_ERROR_RESPONSE,
+        **SUCCESSFUL_RESPONSE,
+    },
 )
 async def get_all_actions(
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -62,14 +62,12 @@ async def get_all_actions(
     response_model=ActionInfo,
     status_code=status.HTTP_200_OK,
     summary='Новая акция',
-    # responses={
-    #     **SUCCESSFUL_RESPONSE,
-    #     **CAFE_DUPLICATE_RESPONSE,
-    #     **INVALID_MANAGER_ID_RESPONSE,
-    #     **FORBIDDEN_RESPONSE,
-    #     **UNAUTHORIZED_RESPONSE,
-    #     **VALIDATION_ERROR_RESPONSE,
-    # },
+    responses={
+        **SUCCESSFUL_RESPONSE,
+        **FORBIDDEN_RESPONSE,
+        **UNAUTHORIZED_RESPONSE,
+        **VALIDATION_ERROR_RESPONSE,
+    },
 )
 async def create_action(
     action_in: ActionCreate,
@@ -77,20 +75,26 @@ async def create_action(
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> ActionInfo:
     """Создает новую акцию. Только для администраторов и менеджеров."""
-    return await ActionService.create_action(session, action_in)
+
+    action = await ActionService.create_action(session, action_in)
+    email_body = ACTION_TEMPLATE.format(
+        action_description=action_in.description
+    )
+    send_mass_mail.delay(body=email_body)
+    return action
 
 
 @router.get(
     '/{action_id}',
     response_model=ActionInfo,
     summary='Информация об акции по ID',
-    # responses={
-    #     **SUCCESSFUL_RESPONSE,
-    #     **NOT_FOUND_RESPONSE,
-    #     **UNAUTHORIZED_RESPONSE,
-    #     **VALIDATION_ERROR_RESPONSE,
-    #     **INVALID_ID_RESPONSE,
-    # },
+    responses={
+        **SUCCESSFUL_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **UNAUTHORIZED_RESPONSE,
+        **VALIDATION_ERROR_RESPONSE,
+        **INVALID_ID_RESPONSE,
+    },
 )
 async def get_action_by_id(
     action_id: Annotated[
@@ -114,14 +118,13 @@ async def get_action_by_id(
     '/{action_id}',
     response_model=ActionInfo,
     summary='Обновление информации об акции по ID',
-    # responses={
-    #     **SUCCESSFUL_RESPONSE,
-    #     **NOT_FOUND_RESPONSE,
-    #     **INVALID_MANAGER_ID_RESPONSE,
-    #     **FORBIDDEN_RESPONSE,
-    #     **UNAUTHORIZED_RESPONSE,
-    #     **VALIDATION_ERROR_RESPONSE,
-    # },
+    responses={
+        **SUCCESSFUL_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **FORBIDDEN_RESPONSE,
+        **UNAUTHORIZED_RESPONSE,
+        **VALIDATION_ERROR_RESPONSE,
+    },
 )
 async def update_action(
     action_id: Annotated[

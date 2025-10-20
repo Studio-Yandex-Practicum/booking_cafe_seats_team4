@@ -8,3 +8,8 @@ BOOKING_CONFIRMATION_TEMPLATE = """
 Стол: {table_id}
 Время слота: {slot_id}
 """
+
+ACTION_TEMPLATE = """
+Уважаемый пользователь!
+У нас новая акция: {action_description}
+"""

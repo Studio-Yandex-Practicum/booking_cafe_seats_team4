@@ -1,15 +1,18 @@
 import io
 import smtplib
+import logging
 from pathlib import Path
 
 from PIL import Image
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
 from models.user import User
+
+logger = logging.getLogger(__name__)
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
 MEDIA_PATH.mkdir(parents=True, exist_ok=True)
@@ -56,16 +59,28 @@ def send_email_task(recipient: str, subject: str, body: str) -> str:
 @celery_app.task(name='send_mass_mail')
 def send_mass_mail(body: str) -> str:
     """Разослать письмо всем активным пользователям."""
+
+    sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
+    engine = create_engine(sync_database_url)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     recipients = session.execute(select(User).where(User.is_active))
     recipients = recipients.scalars().all()
+    logger.info(f'GGG {len(recipients)}')
+    if not recipients:
+        session.close()
+        engine.dispose()
+        return 'Нет активных пользователей'
     for recipient in recipients:
         try:
             server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            message = f'Subject: {recipient.username}\n\n{body}'
+            subject = 'Новая акция!'
+            message = f'Subject: {subject}\n\n{body}'
+            message = message.encode('utf-8')
             server.sendmail(SMTP_USERNAME, recipient.email, message)
             server.quit()
         except Exception as e:  # noqa: BLE001
-            return str(e)
+            print(str(e))
     return 'Email sent to all users'
