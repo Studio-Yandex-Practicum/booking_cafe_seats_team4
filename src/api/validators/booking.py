@@ -5,11 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import err
-from models.booking import Booking
-from models.slots import Slot
+from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
+from models.slots import Slot
 from models.table import Table
-from models.booking import BookingStatus
 
 
 async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
