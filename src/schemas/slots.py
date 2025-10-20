@@ -1,53 +1,73 @@
 from datetime import datetime
-from typing import Annotated, Optional, Self  # <-- добавили Self
+from typing import Annotated, Optional, Self
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StringConstraints,
     field_validator,
     model_validator,
 )
 
+from core.constants import DESCRIPTION_MAX, DESCRIPTION_MIN, TIME_LENGTH
 from .validators import validate_time_format, validate_time_range
 
-TimeStr = Annotated[str, Field(min_length=5, max_length=5)]
 
+# Ограничения для строковых полей
+DescriptionStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=DESCRIPTION_MIN,
+        max_length=DESCRIPTION_MAX,
+    ),
+]
+
+TimeStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=TIME_LENGTH,
+        max_length=TIME_LENGTH,
+        pattern=r'^\d{2}:\d{2}$',  # строгий формат HH:MM
+    ),
+]
 
 class TimeSlotBase(BaseModel):
     """Базовая схема временного слота."""
 
-    cafe_id: int
-    start_time: TimeStr  # 'HH:MM'
-    end_time: TimeStr  # 'HH:MM'
-    description: str
+    cafe_id: Annotated[
+        int,
+        Field(gt=0, description="ID кафе должен быть положительным")
+    ]
+    start_time: TimeStr
+    end_time: TimeStr
+    description: DescriptionStr
 
-    # формат времени для каждого поля
     @field_validator('start_time', 'end_time')
     @classmethod
     def _validate_time_format(cls, v: str) -> str:
         return validate_time_format(v)
 
-    # корректность диапазона (нужны оба поля)
     @model_validator(mode='after')
-    def _validate_time_range(self) -> Self:  # <-- аннотация возврата
+    def _validate_time_range(self) -> Self:
         validate_time_range(self.start_time, self.end_time)
         return self
 
 
 class TimeSlotCreate(TimeSlotBase):
     """Схема для создания временного слота."""
-
     pass
 
 
 class TimeSlotUpdate(BaseModel):
     """Схема для обновления временного слота."""
 
-    cafe_id: Optional[int] = None
+    cafe_id: Optional[int] = Field(default=None, gt=0)
     start_time: Optional[TimeStr] = None
     end_time: Optional[TimeStr] = None
-    description: Optional[str] = None
+    description: Optional[DescriptionStr] = None
     is_active: Optional[bool] = None
 
     @field_validator('start_time', 'end_time')
@@ -58,11 +78,10 @@ class TimeSlotUpdate(BaseModel):
         return validate_time_format(v)
 
     @model_validator(mode='after')
-    def _validate_time_range_optional(self) -> Self:  # <-- аннотация возврата
+    def _validate_time_range_optional(self) -> Self:
         if self.start_time is not None and self.end_time is not None:
             validate_time_range(self.start_time, self.end_time)
         return self
-
 
 class TimeSlotShortInfo(BaseModel):
     """Краткая информация о временном слоте."""
@@ -72,7 +91,6 @@ class TimeSlotShortInfo(BaseModel):
     end_time: str
     description: str
 
-    # pydantic v2
     model_config = ConfigDict(from_attributes=True)
 
 
