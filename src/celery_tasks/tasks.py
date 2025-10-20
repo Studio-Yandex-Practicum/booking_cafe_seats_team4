@@ -4,6 +4,8 @@ from pathlib import Path
 
 from PIL import Image
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
@@ -37,14 +39,14 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
 
 
 @celery_app.task(name='send_email_task')
-def send_email_task(recipient: User, subject: str, body: str) -> str:
+def send_email_task(recipient: str, subject: str, body: str) -> str:
     """Отправить одно письмо пользователю."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
-        server.login('your_email@example.com', SMTP_PASSWORD)
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
         message = f'Subject: {subject}\n\n{body}'
-        server.sendmail('your_email@example.com', recipient, message)
+        server.sendmail(SMTP_USERNAME, recipient, message)
         server.quit()
     except Exception as e:  # noqa: BLE001
         return str(e)
@@ -52,17 +54,17 @@ def send_email_task(recipient: User, subject: str, body: str) -> str:
 
 
 @celery_app.task(name='send_mass_mail')
-async def send_mass_mail(body: str) -> str:
+def send_mass_mail(body: str) -> str:
     """Разослать письмо всем активным пользователям."""
-    recipients = select(User).where(User.is_active)
+    recipients = session.execute(select(User).where(User.is_active))
     recipients = recipients.scalars().all()
     for recipient in recipients:
         try:
             server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
             server.starttls()
-            server.login('your_email@example.com', SMTP_PASSWORD)
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
             message = f'Subject: {recipient.username}\n\n{body}'
-            server.sendmail('your_email@example.com', recipient.email, message)
+            server.sendmail(SMTP_USERNAME, recipient.email, message)
             server.quit()
         except Exception as e:  # noqa: BLE001
             return str(e)

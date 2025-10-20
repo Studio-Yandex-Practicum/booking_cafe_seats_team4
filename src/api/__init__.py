@@ -7,6 +7,7 @@ from .endpoints import media as media_router
 from .endpoints import slots as slots_router
 from .endpoints import table as table_router
 from .endpoints import users as users_router
+from .endpoints import action as action_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router.router)
@@ -16,5 +17,6 @@ api_router.include_router(table_router.router)
 api_router.include_router(slots_router.router)
 api_router.include_router(booking_router.router)
 api_router.include_router(media_router.router)
+api_router.include_router(action_router.router)
 
 __all__ = ['api_router']

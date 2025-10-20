@@ -3,8 +3,10 @@ import uuid
 
 from fastapi import HTTPException, UploadFile, status
 
+from core.constants import MAX_LEN_MEDIA_CONTENT
 
-async def media_allowed_content_type(file: UploadFile) -> UploadFile:
+
+def media_allowed_content_type(file: UploadFile) -> UploadFile:
     """Проверяет формат файла."""
     content_types = ['image/jpeg', 'image/png', 'image/jpg']
     if file.content_type not in content_types:
@@ -19,7 +21,7 @@ async def media_allowed_content_type(file: UploadFile) -> UploadFile:
 async def check_len_file(file: UploadFile) -> bytes:
     """Проверяет размер файла."""
     contents = await file.read()
-    if len(contents) > 5_242_880:
+    if len(contents) > MAX_LEN_MEDIA_CONTENT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Размер файла не должен превышать 5Мб.',
