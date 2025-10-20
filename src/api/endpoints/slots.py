@@ -11,7 +11,7 @@ from api.validators.slots import (
     user_can_manage_cafe,
     validate_no_time_overlap,
 )
-from responses import (
+from api.responses import (
     NOT_FOUND_RESPONSE,
     FORBIDDEN_RESPONSE,
     UNAUTHORIZED_RESPONSE,

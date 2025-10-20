@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import not_found, forbidden, bad_request
+from api.exceptions import not_found, forbidden, bad_request
 from models.cafe import Cafe
 from models.slots import Slot
 from models.user import User
