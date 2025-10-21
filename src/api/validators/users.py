@@ -9,8 +9,8 @@ from core.security import hash_password
 from models.user import User
 from schemas.user import UserCreate, UserUpdate
 
-from src.api.deps import get_current_user
-from src.schemas.user import UserRole
+from api.deps import get_current_user
+from schemas.user import UserRole
 
 
 async def get_user_or_404(user_id: int, session: AsyncSession) -> User:

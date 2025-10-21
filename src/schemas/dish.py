@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from .cafe import CafeShortInfo
-from src.core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
+from core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
 
 
 class DishBase(BaseModel):

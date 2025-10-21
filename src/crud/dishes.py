@@ -4,11 +4,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .base import CRUDBase
-from src.api.validators.dishes import check_cafe_exists
-from src.core.logging import get_logger
-from src.crud.base import CreateSchemaType, UpdateSchemaType
-from src.models.cafe import Cafe
-from src.models.dish import Dish
+from api.validators.dishes import check_cafe_exists
+from core.logging import get_logger
+from crud.base import CreateSchemaType, UpdateSchemaType
+from models.cafe import Cafe
+from models.dish import Dish
 
 logger = get_logger(__name__)
 
