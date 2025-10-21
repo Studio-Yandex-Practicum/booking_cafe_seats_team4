@@ -20,7 +20,9 @@ from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
 
-@router.get('/', response_model=List[BookingInfo])
+@router.get('/', response_model=List[BookingInfo],
+            summary='Список бронирований'
+            )
 async def get_list_booking(
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
@@ -33,7 +35,7 @@ async def get_list_booking(
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
-    if not require_manager_or_admin(user):
+    if not await require_manager_or_admin(user):
         return await booking_crud.get_multi_booking(
             session=session,
             show_all=show_all,
@@ -48,7 +50,8 @@ async def get_list_booking(
     )
 
 
-@router.post('/', response_model=BookingInfo)
+@router.post('/', response_model=BookingInfo,
+             summary='Создание бронирования')
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
@@ -58,7 +61,7 @@ async def create_booking(
 
     Только для авторизированных пользователей.
     """
-    await check_booking_date(booking.booking_date, session)
+    await check_booking_date(booking.booking_date)
     await check_all_objects_id(
         {
             Cafe: booking.cafe_id,
@@ -67,10 +70,13 @@ async def create_booking(
         },
         session,
     )
-    return await booking_crud.create(booking, user, session)
+    booking = await booking_crud.create_booking(booking, user.id, session)
+    return booking
 
 
-@router.get('/{booking_id}', response_model=BookingInfo)
+@router.get('/{booking_id}', response_model=BookingInfo,
+            summary='Информация о бронировании по ID'
+            )
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
@@ -81,7 +87,7 @@ async def get_booking(
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
-    if not await require_manager_or_admin(user):
+    if not require_manager_or_admin(user):
         return await booking_crud.get_booking_current_user(
             booking_id,
             user,
@@ -90,7 +96,9 @@ async def get_booking(
     return await booking_exists(booking_id, session)
 
 
-@router.patch('/{booking_id}', response_model=BookingInfo)
+@router.patch('/{booking_id}', response_model=BookingInfo,
+              summary='Обновление бронирования по ID'
+              )
 async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,
@@ -110,4 +118,4 @@ async def update_booking(
         )
 
     booking = await booking_exists(booking_id, session)
-    return await booking_crud.update(booking.id, obj_in, session)
+    return await booking_crud.update(booking, obj_in, session)

@@ -158,4 +158,4 @@ async def _get_token(client: AsyncClient, login: str, password: str) -> str:
 @pytest.fixture()
 async def token_email(client: AsyncClient, user_email: Dict) -> str:
     """Фикстура: токен пользователя с email."""
-    return await _get_token(client, 'u@u.com', 'qwe123')
+    return await _get_token(client, 'u@u.com', 'qwe123') 

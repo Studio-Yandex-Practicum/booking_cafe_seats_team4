@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import IntEnum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 
 from schemas.cafe import CafeShortInfo
 from schemas.user import UserShortInfo
@@ -95,14 +95,14 @@ class BookingShortInfo(BaseModel):
 class BookingInfo(BookingShortInfo):
     """Полная информация о бронировании."""
 
-    user_id: UserShortInfo
-    cafe_id: CafeShortInfo
-    tables: List['TableShortInfo']
-    slots: List['TimeSlotShortInfo']
+    user: UserShortInfo
+    cafe: CafeShortInfo
+    tables: List[TableShortInfo] = Field(alias='tables_id')
+    slots: List[TimeSlotShortInfo] = Field(alias='slots_id')
     guest_number: int
     note: Optional[str]
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
