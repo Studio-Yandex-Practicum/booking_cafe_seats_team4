@@ -21,7 +21,7 @@ router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
 
 @router.get('/', response_model=List[BookingInfo],
-            summary='Список бронирований'
+            summary='Список бронирований',
             )
 async def get_list_booking(
     show_all: Optional[bool] = False,
@@ -75,7 +75,7 @@ async def create_booking(
 
 
 @router.get('/{booking_id}', response_model=BookingInfo,
-            summary='Информация о бронировании по ID'
+            summary='Информация о бронировании по ID',
             )
 async def get_booking(
     booking_id: int,
@@ -97,7 +97,7 @@ async def get_booking(
 
 
 @router.patch('/{booking_id}', response_model=BookingInfo,
-              summary='Обновление бронирования по ID'
+              summary='Обновление бронирования по ID',
               )
 async def update_booking(
     booking_id: int,

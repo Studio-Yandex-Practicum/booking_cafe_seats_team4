@@ -1,10 +1,9 @@
 from datetime import date
 
-from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import not_found, forbidden, bad_request
+from api.exceptions import bad_request, not_found
 from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
 from models.slots import Slot
@@ -26,7 +25,6 @@ async def check_all_objects_id(
     """Проверяет существование кафе, слотов и столов по их ID.
     Затем валидирует отсутствие конфликтующих бронирований.
     """
-
     cafe_id = objects_dict[Cafe]
     slots_id = objects_dict[Slot]
     tables_id = objects_dict[Table]
@@ -54,7 +52,6 @@ async def check_booking_conflicts(
     session: AsyncSession,
 ) -> None:
     """Проверяет наличие конфликтующих бронирований."""
-
     stmt = (
         select(Booking)
         .join(Booking.slots_id)
@@ -63,7 +60,7 @@ async def check_booking_conflicts(
             Booking.cafe_id == cafe_id,
             Booking.status == BookingStatus.ACTIVE.value,
             Slot.id.in_(slots_id),
-            Table.id.in_(tables_id)
+            Table.id.in_(tables_id),
         )
     )
 
@@ -86,7 +83,7 @@ async def check_booking_conflicts(
             err_msg.append(f"Столы уже заняты: {sorted(conflicting_tables)}")
 
         raise bad_request(
-            "Найдены конфликтующие бронирования. " + "; ".join(err_msg)
+            "Найдены конфликтующие бронирования. " + "; ".join(err_msg),
         )
 
 

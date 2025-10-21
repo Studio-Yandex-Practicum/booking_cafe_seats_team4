@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import IntEnum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from schemas.cafe import CafeShortInfo
 from schemas.user import UserShortInfo
