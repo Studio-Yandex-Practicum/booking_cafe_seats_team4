@@ -46,10 +46,10 @@ class Settings:
     )
 
     # SMTP
-    SMTP_HOST: str = os.getenv('SMTP_HOST', 'sandbox.smtp.mailtrap.io')
-    SMTP_PORT: int = int(os.getenv('SMTP_PORT', '2525'))
-    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', 'xxxxxxxxxxxxxx')
-    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'xxxxxxxxxxxxxx')
+    SMTP_HOST: str = os.getenv('SMTP_HOST', 'smtp.yandex.ru')
+    SMTP_PORT: int = int(os.getenv('SMTP_PORT', '587'))
+    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', 'meshok1589@yandex.com')
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'piwrucrdprcuegaw')
 
     # Logging
     LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
