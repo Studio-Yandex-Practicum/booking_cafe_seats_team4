@@ -1,31 +1,29 @@
 from uuid import UUID
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 
-class ActionCreate(BaseModel):
-    """Схема создания акции."""
-
+class ActionBase(BaseModel):
     description: str
     photo_id: UUID | None = None
-    cafe_ids: list[int] = Field(default_factory=list)
+    cafes_id: list[int] = Field(default_factory=list)
 
 
-class ActionUpdate(BaseModel):
-    """Схема частичного обновления акции."""
+class ActionCreate(ActionBase):
+    pass
 
+
+class ActionUpdate(ActionBase):
     description: str | None = None
-    photo_id: UUID | None = None
-    cafe_ids: list[int] | None = None
+    cafes_id: list[int] | None = None
 
 
-class ActionOut(BaseModel):
-    """Схема ответа по акции."""
-
+class ActionInfo(ActionBase):
     id: int
-    description: str
-    photo_id: UUID | None = None
-    cafe_ids: list[int]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,13 +1,18 @@
 import io
 import smtplib
+import logging
 from pathlib import Path
 
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import select, create_engine
+from sqlalchemy.orm import sessionmaker
+
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
 from models.user import User
+
+logger = logging.getLogger(__name__)
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
 MEDIA_PATH.mkdir(parents=True, exist_ok=True)
@@ -37,14 +42,14 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
 
 
 @celery_app.task(name='send_email_task')
-def send_email_task(recipient: User, subject: str, body: str) -> str:
+def send_email_task(recipient: str, subject: str, body: str) -> str:
     """Отправить одно письмо пользователю."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
-        server.login('your_email@example.com', SMTP_PASSWORD)
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
         message = f'Subject: {subject}\n\n{body}'
-        server.sendmail('your_email@example.com', recipient, message)
+        server.sendmail(SMTP_USERNAME, recipient, message)
         server.quit()
     except Exception as e:  # noqa: BLE001
         return str(e)
@@ -52,18 +57,30 @@ def send_email_task(recipient: User, subject: str, body: str) -> str:
 
 
 @celery_app.task(name='send_mass_mail')
-async def send_mass_mail(body: str) -> str:
+def send_mass_mail(body: str) -> str:
     """Разослать письмо всем активным пользователям."""
-    recipients = select(User).where(User.is_active)
+
+    sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
+    engine = create_engine(sync_database_url)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    recipients = session.execute(select(User).where(User.is_active))
     recipients = recipients.scalars().all()
+    logger.info(f'GGG {len(recipients)}')
+    if not recipients:
+        session.close()
+        engine.dispose()
+        return 'Нет активных пользователей'
     for recipient in recipients:
         try:
             server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
             server.starttls()
-            server.login('your_email@example.com', SMTP_PASSWORD)
-            message = f'Subject: {recipient.username}\n\n{body}'
-            server.sendmail('your_email@example.com', recipient.email, message)
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            subject = 'Новая акция!'
+            message = f'Subject: {subject}\n\n{body}'
+            message = message.encode('utf-8')
+            server.sendmail(SMTP_USERNAME, recipient.email, message)
             server.quit()
         except Exception as e:  # noqa: BLE001
-            return str(e)
+            print(str(e))
     return 'Email sent to all users'
