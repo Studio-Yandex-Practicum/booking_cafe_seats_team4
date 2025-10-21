@@ -15,7 +15,7 @@ async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
     """Проверяет, что бронь существует и активна."""
     booking = await session.get(Booking, booking_id)
     if booking is None or booking.status != BookingStatus.ACTIVE.value:
-        err(
+        return err(
             404,
             'Такой брони нет или она не активна.',
             status.HTTP_404_NOT_FOUND,
@@ -37,17 +37,18 @@ async def check_all_objects_id(
 
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None:
-        err(
+        return err(
             404,
             f'Нет кафе с ID: {cafe_id}',
             status.HTTP_404_NOT_FOUND,
-            )
-    for id in slots_id:
-        slot = await session.get(Slot, id)
+        )
+
+    for slot_id in slots_id:
+        slot = await session.get(_slots, slot_id)
         if slot is None:
             err(
                 404,
-                f'Нет временного слота с ID: {id}',
+                f'Нет временного слота с ID: {slot_id}',
                 status.HTTP_404_NOT_FOUND,
             )
 
@@ -56,11 +57,12 @@ async def check_all_objects_id(
         if table is None:
             err(
                 404,
-                f'Нет стола с ID: {id}',
+                f'Нет стола с ID: {table_id}',
                 status.HTTP_404_NOT_FOUND,
             )
 
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+    return None  # RET503
 
 
 async def check_booking_conflicts(
@@ -84,11 +86,13 @@ async def check_booking_conflicts(
         conflicting_tables = list(set(b.tables_id for b in existing_bookings))
         err(
             422,
-            f"Найдены конфликтующие бронирования. "
-            f"Слоты: {conflicting_slots}, "
-            f"Столы: {conflicting_tables}",
+            'Найдены конфликтующие бронирования. '
+            f'Слоты: {conflicting_slots}, '
+            f'Столы: {conflicting_tables}',
             status.HTTP_422_UNPROCESSABLE_CONTENT,
-            )
+        )
+
+    return None  # RET503
 
 
 async def check_booking_date(booking_date: date) -> None:
@@ -98,4 +102,5 @@ async def check_booking_date(booking_date: date) -> None:
             422,
             'Нельзя назначить бронь на прошедшую дату!',
             status.HTTP_422_UNPROCESSABLE_CONTENT,
-            )
+        )
+    return None  # RET503

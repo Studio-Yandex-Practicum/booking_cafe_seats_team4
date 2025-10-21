@@ -53,6 +53,16 @@ class UserCreate(BaseModel):
         v = v.strip()
         return v or None
 
+    @field_validator('password')
+    @classmethod
+    def _password_create_not_blank(cls, v: str) -> str:
+        v = (v or '').strip()
+        if not v:
+            raise ValueError('Пароль не может быть пустым')
+        if len(v) < 6:
+            raise ValueError('Минимальная длина пароля — 6 символов')
+        return v
+
 
 class UserShortInfo(BaseModel):
     """Сокращённая информация о пользователе."""
@@ -99,3 +109,24 @@ class UserUpdate(BaseModel):
             return None
         v = v.strip()
         return v or None
+
+    @field_validator('username')
+    @classmethod
+    def _username_not_blank(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if not v.strip():
+            raise ValueError('Имя пользователя не может быть пустым')
+        return v
+
+    @field_validator('password')
+    @classmethod
+    def _password_not_blank(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            raise ValueError('Пароль не может быть пустым')
+        if len(v) < 6:
+            raise ValueError('Минимальная длина пароля — 6 символов')
+        return v

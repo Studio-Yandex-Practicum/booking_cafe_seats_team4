@@ -2,10 +2,10 @@ from typing import Iterable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import bad_request, forbidden, not_found
+from api.exceptions import bad_request, err, forbidden, not_found
 from core.security import hash_password
 from models.user import User
-from schemas.user import UserCreate, UserUpdate
+from schemas.user import UserCreate, UserRole, UserUpdate
 
 
 async def get_user_or_404(user_id: int, session: AsyncSession) -> User:
@@ -43,17 +43,15 @@ def apply_user_update(entity: User, update: UserUpdate) -> None:
     """Частичное обновление User, включая смену пароля."""
     data = update.model_dump(exclude_unset=True, exclude_none=True)
 
-    # пароль хэшируем отдельно
     if 'password' in data:
         entity.password_hash = hash_password(data.pop('password'))
 
     if 'role' in data and data['role'] is not None:
         try:
-            data['role'] = int(data['role'])
-        except (TypeError, ValueError):
-            pass
+            data['role'] = int(UserRole(data['role']))
+        except ValueError:
+            raise err('ROLE_UNKNOWN', 'Неизвестная роль', 422)
 
-    # применяем разрешённые поля
     for field in _MUTABLE_FIELDS:
         if field in data:
             setattr(entity, field, data[field])

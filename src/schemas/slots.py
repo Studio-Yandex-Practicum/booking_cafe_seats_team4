@@ -40,7 +40,7 @@ class TimeSlotBase(BaseModel):
 
     cafe_id: Annotated[
         int,
-        Field(gt=0, description="ID кафе должен быть положительным"),
+        Field(gt=0, description='ID кафе должен быть положительным'),
     ]
     start_time: TimeStr
     end_time: TimeStr
