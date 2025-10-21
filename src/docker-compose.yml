@@ -62,10 +62,49 @@ services:
       - ./media:/app/media
     command: >
       sh -c "
-        alembic upgrade head &&
-        celery -A celery_tasks.celery_app worker --loglevel=info --detach &&
         uvicorn main:app --host 0.0.0.0 --port 8000
       "
+
+  celery-worker:
+    build: .
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    volumes:
+      - ./media:/app/media
+    command: celery -A celery_tasks.celery_app worker --loglevel=info
+    restart: unless-stopped
+
+  flower:
+    build: .
+    ports:
+      - "5555:5555"
+    env_file:
+      - ./.env
+    environment:
+      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      FLOWER_USER: ${FLOWER_USER}
+      FLOWER_PASSWORD: ${FLOWER_PASSWORD}
+    depends_on:
+      - redis
+      - rabbitmq
+      - celery-worker 
+    volumes:
+      - ./media:/app/media
+    command: celery -A celery_tasks.celery_app flower --port=5555 --basic_auth=admin:password123
+    restart: unless-stopped
 
 volumes:
   pgdata:

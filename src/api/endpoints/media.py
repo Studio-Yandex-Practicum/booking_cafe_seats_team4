@@ -7,27 +7,27 @@ from fastapi.responses import FileResponse
 from api.deps import require_manager_or_admin
 from api.validators.media import (
     check_len_file,
-    check_media_id,
     media_allowed_content_type,
-    media_exist,
 )
-from celery_tasks.tasks import save_image
+from celery_tasks.tasks import save_image, get_image_task
 from core.config import settings
-from models.user import User
 from schemas.media import MediaUploadResponse
 
-router = APIRouter(prefix='/media', tags=['media'])
+router = APIRouter(prefix='/media', tags=['Медиа'])
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
 
 
-@router.post('', response_model=MediaUploadResponse)
-async def upload_image(
-    file: UploadFile = File(...),
-    user: User = Depends(require_manager_or_admin),
-) -> MediaUploadResponse:
+@router.post(
+    '',
+    response_model=MediaUploadResponse,
+    summary='Загрузка иображения',
+    dependencies=[Depends(require_manager_or_admin)]
+)
+async def upload_image(file: UploadFile = File(...)) -> MediaUploadResponse:
     """Эндпоинт загрузки изображений."""
-    file = await media_allowed_content_type(file)
+
+    file = media_allowed_content_type(file)
     contents = await check_len_file(file)
     media_id = str(uuid.uuid4())
     try:
@@ -42,13 +42,11 @@ async def upload_image(
         )
 
 
-@router.get('/{media_id}')
+@router.get('/{media_id}', summary='Получение изображения по ID')
 async def get_image(media_id: str) -> FileResponse:
     """Получение изображения по ID."""
-    media_id = check_media_id(media_id)
-    filename = f'{media_id}.jpg'
-    file_path = MEDIA_PATH / filename
-    file_path = media_exist(file_path)
+
+    file_path = get_image_task(media_id)
     return FileResponse(
         path=file_path,
         media_type='image/jpeg',

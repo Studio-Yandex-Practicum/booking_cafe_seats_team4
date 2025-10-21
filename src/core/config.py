@@ -48,8 +48,11 @@ class Settings:
     # SMTP
     SMTP_HOST: str = os.getenv('SMTP_HOST', 'smtp.yandex.ru')
     SMTP_PORT: int = int(os.getenv('SMTP_PORT', '587'))
-    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', 'meshok1589@yandex.com')
-    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'piwrucrdprcuegaw')
+    SMTP_USERNAME: str = os.getenv(
+        'SMTP_USERNAME',
+        'python-plus-53-54-cafe@yandex.ru'
+    )
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'jlezoiiqptbwgmae')
 
     # Logging
     LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
