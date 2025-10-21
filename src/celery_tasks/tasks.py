@@ -13,7 +13,6 @@ from email.header import Header
 from celery_tasks.celery_app import celery_app
 from core.config import settings
 from models.user import User
-from api.validators.media import media_exist, check_media_id
 
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
@@ -43,7 +42,7 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
 @celery_app.task(name='get_image_task')
 def get_image_task(media_id: str) -> str:
     """Celery задача для получения изображения по ID."""
-
+    from api.validators.media import media_exist, check_media_id
     media_id = check_media_id(media_id)
     filename = f'{media_id}.jpg'
     file_path = MEDIA_PATH / filename
