@@ -11,7 +11,10 @@ from api.validators.booking import (
 )
 from core.db import get_session
 from crud.booking import booking_crud
-from models import _cafe, _slots, _table, _user
+from models.cafe import Cafe
+from models.slots import Slot
+from models.table import Table
+from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
@@ -23,14 +26,14 @@ async def get_list_booking(
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> List[BookingInfo]:
     """Получение списка бронирований.
 
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
-    if not await require_manager_or_admin(user):
+    if not require_manager_or_admin(user):
         return await booking_crud.get_multi_booking(
             session=session,
             show_all=show_all,
@@ -49,7 +52,7 @@ async def get_list_booking(
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Создает новое бронирования.
 
@@ -58,9 +61,9 @@ async def create_booking(
     await check_booking_date(booking.booking_date, session)
     await check_all_objects_id(
         {
-            _cafe: booking.cafe_id,
-            _slots: booking.slots_id,
-            _table: booking.tables_id,
+            Cafe: booking.cafe_id,
+            Slot: booking.slots_id,
+            Table: booking.tables_id,
         },
         session,
     )
@@ -71,7 +74,7 @@ async def create_booking(
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Получение информации о бронировании по его ID.
 
@@ -92,7 +95,7 @@ async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Обновление информации о бронировании по его ID.
 

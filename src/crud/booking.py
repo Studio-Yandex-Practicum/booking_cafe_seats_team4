@@ -2,8 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.base import CRUDBase
-from models import _booking, _user
 from models.booking import Booking
+from models.user import User
 from schemas.booking import BookingCreate, BookingUpdate
 
 
@@ -16,10 +16,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         **kwargs: dict,
     ) -> list[Booking]:
         """Получение всех бронированний с дополнительными параметрами."""
-        query = select(_booking)
+        query = select(Booking)
         show_all = kwargs.pop('show_all', False)
         if not show_all:
-            query = query.where(_booking.is_active)
+            query = query.where(Booking.is_active)
         for field, value in kwargs.items():
             if hasattr(self.model, field) and value is not None:
                 query = query.where(getattr(self.model, field) == value)
@@ -29,17 +29,17 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
     async def get_booking_current_user(
         self,
         booking_id: int,
-        user: _user,
+        user: User,
         session: AsyncSession,
-    ) -> _booking:
+    ) -> Booking:
         """Получение бронирования для конкретного юзера."""
         query = await session.execute(
-            select(_booking).where(
-                _booking.booking_id == booking_id,
-                _booking.user_id == user.id,
+            select(Booking).where(
+                Booking.booking_id == booking_id,
+                Booking.user_id == user.id,
             ),
         )
         return query.scalars().first()
 
 
-booking_crud = CRUDBooking(_booking)
+booking_crud = CRUDBooking(Booking)
