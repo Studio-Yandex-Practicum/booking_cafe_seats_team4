@@ -13,7 +13,6 @@ from pydantic import (
 from core.constants import DESCRIPTION_MAX, DESCRIPTION_MIN, TIME_LENGTH
 from .validators import validate_time_format, validate_time_range
 
-
 # Ограничения для строковых полей
 DescriptionStr = Annotated[
     str,
@@ -34,13 +33,14 @@ TimeStr = Annotated[
     ),
 ]
 
+
 class TimeSlotBase(BaseModel):
     """Базовая схема временного слота."""
 
-    cafe_id: Annotated[
-        int,
-        Field(gt=0, description="ID кафе должен быть положительным")
-    ]
+    cafe_id: Annotated[int, Field(
+        gt=0,
+        description="ID кафе должен быть положительным"
+    )]
     start_time: TimeStr
     end_time: TimeStr
     description: DescriptionStr
@@ -82,6 +82,7 @@ class TimeSlotUpdate(BaseModel):
         if self.start_time is not None and self.end_time is not None:
             validate_time_range(self.start_time, self.end_time)
         return self
+
 
 class TimeSlotShortInfo(BaseModel):
     """Краткая информация о временном слоте."""
