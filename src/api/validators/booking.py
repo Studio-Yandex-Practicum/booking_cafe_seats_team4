@@ -43,6 +43,7 @@ async def check_all_objects_id(
             raise not_found(f'Нет стола с ID: {table_id}')
 
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+    return None  # RET503
 
 
 async def check_booking_conflicts(
