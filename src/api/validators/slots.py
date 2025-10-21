@@ -1,10 +1,9 @@
 from typing import Any
 
-from fastapi import HTTPException, status
+from exceptions import bad_request, forbidden, not_found
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import not_found, forbidden, bad_request
 from models.cafe import Cafe
 from models.slots import Slot
 from models.user import User
@@ -41,6 +40,7 @@ def slot_active(slot: Slot) -> None:
     """Запрещает операции над неактивным слотом."""
     if not slot.is_active:
         raise forbidden('Слот не активен.')
+
 
 async def validate_no_time_overlap(
     payload: Any,

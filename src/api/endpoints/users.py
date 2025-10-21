@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
-from api.exceptions import bad_request, forbidden
+from api.exceptions import err
 from api.validators.users import (
     ensure_contact_present_on_create,
     ensure_user_active,
@@ -14,17 +14,21 @@ from api.validators.users import (
 from core.db import get_session
 from crud.users import user_crud
 from models.user import User
-from schemas.user import UserCreate, UserInfo, UserUpdate
+from schemas.user import UserCreate, UserInfo, UserRole, UserUpdate
 
 router = APIRouter(prefix='/users', tags=['Пользователи'])
 
 
-@router.get('', response_model=list[UserInfo], summary='Список пользователей')
+@router.get(
+    '',
+    response_model=list[UserInfo],
+    summary='Список пользователей',
+)
 async def list_users(
     _: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[UserInfo]:
-    """Возвращает список всех активных пользователей, отсортированный по ID."""
+    """Возвращает список всех активных пользователей."""
     return await user_crud.list_all(session=session, only_active=True)
 
 
@@ -39,16 +43,18 @@ async def create_user(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserInfo:
     """Создаёт нового пользователя (через CRUD)."""
-    # Запрашиваем хотя бы один контакт (email или phone)
+    # Просим хотя бы один контакт (email или phone)
     ensure_contact_present_on_create(payload)
 
-    # При повторе email/phone отдаём 400 CustomError
+    # Создание; при дубле email/phone отдаём 400 CustomError
     try:
         return await user_crud.create_with_hash(payload, session)
     except IntegrityError:
         await session.rollback()
-        raise bad_request(
-            ('Пользователь с таким email или телефоном уже существует'),
+        raise err(
+            'USER_DUPLICATE',
+            'Пользователь с таким email или телефоном уже существует',
+            400,
         )
 
 
@@ -67,8 +73,9 @@ async def patch_me(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserInfo:
     """Позволяет частично изменить свои данные."""
+    # Запрещаем менять собственную роль
     if payload.role is not None:
-        raise forbidden('Запрещено изменять собственную роль')
+        raise err('FORBIDDEN', 'Запрещено изменять собственную роль', 403)
     return await user_crud.update_with_logic(current, payload, session)
 
 
@@ -96,10 +103,55 @@ async def get_user_by_id(
 async def patch_user_by_id(
     user_id: int,
     payload: UserUpdate,
-    _: Annotated[User, Depends(require_manager_or_admin)],
+    current: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserInfo:
-    """Изменяет данные пользователя по ID (через CRUD)."""
-    user = await get_user_or_404(user_id, session)
-    ensure_user_active(user)
-    return await user_crud.update_with_logic(user, payload, session)
+    """Изменяет данные пользователя по ID."""
+    target = await get_user_or_404(user_id, session)
+    ensure_user_active(target)
+
+    effective = payload.model_dump(exclude_unset=True, exclude_none=True)
+    if not effective:
+        raise err(
+            'EMPTY_PATCH',
+            'Нет данных для изменения',
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    new_role = None
+    if 'role' in effective and effective['role'] is not None:
+        try:
+            new_role = UserRole(effective['role'])
+        except ValueError:
+            raise err(
+                'ROLE_UNKNOWN',
+                'Неизвестная роль',
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
+    # Ограничения для менеджера
+    if int(current.role) == int(UserRole.MANAGER):
+        if current.id == target.id and new_role is not None:
+            raise err(
+                'SELF_ROLE_FORBIDDEN',
+                'Менеджеру нельзя менять свою роль',
+                status.HTTP_403_FORBIDDEN,
+            )
+
+        # Менеджеру нельзя менять роль у существующего админа
+        if int(target.role) == int(UserRole.ADMIN) and new_role is not None:
+            raise err(
+                'ADMIN_EDIT_FORBIDDEN',
+                'Менеджеру нельзя изменять роль администратора',
+                status.HTTP_403_FORBIDDEN,
+            )
+
+        # Менеджеру нельзя назначать ADMIN
+        if new_role is not None and int(new_role) == int(UserRole.ADMIN):
+            raise err(
+                'ROLE_FORBIDDEN',
+                'Менеджеру нельзя назначать роль ADMIN',
+                status.HTTP_403_FORBIDDEN,
+            )
+
+    return await user_crud.update_with_logic(target, payload, session)
