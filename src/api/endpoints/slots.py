@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
+from api.exceptions import bad_request
 from api.responses import (
     FORBIDDEN_RESPONSE,
     NOT_FOUND_RESPONSE,
@@ -22,7 +23,6 @@ from crud.slots import slot_crud
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
 from schemas.user import UserRole
-from api.exceptions import bad_request
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 
@@ -131,7 +131,7 @@ async def update_slot(
     if (payload.start_time is not None or payload.end_time is not None) and \
        (payload.start_time is None or payload.end_time is None):
         raise bad_request(
-            'Для обновления времени оба поля start_time и end_time обязательны'
+            'Для обновления времени оба поля start_time и end_time обязательны',
         )
 
     if payload.start_time and payload.end_time:

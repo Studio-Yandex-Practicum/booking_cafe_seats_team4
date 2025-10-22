@@ -5,7 +5,7 @@ def validate_date_not_past(booking_date: date) -> date:
     """Проверка, что дата бронирования не в прошлом."""
     if booking_date < date.today():
         raise ValueError(
-            f'Нельзя бронировать на прошедшие даты: {booking_date}'
+            f'Нельзя бронировать на прошедшие даты: {booking_date}',
         )
     return booking_date
 
@@ -14,7 +14,7 @@ def validate_positive_number(value: int, field_name: str = 'Значение') -
     """Проверка, что значение положительное."""
     if value <= 0:
         raise ValueError(
-            f'{field_name} должно быть положительным, получено {value}'
+            f'{field_name} должно быть положительным, получено {value}',
         )
     return value
 
@@ -26,7 +26,7 @@ def validate_time_format(time_str: str) -> str:
         return time_str
     except ValueError:
         raise ValueError(
-            f'Время должно быть в формате HH:MM, получено "{time_str}"'
+            f'Время должно быть в формате HH:MM, получено "{time_str}"',
         )
 
 

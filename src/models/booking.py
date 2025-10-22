@@ -33,13 +33,13 @@ class Booking(BaseModel):
 
     user = relationship('User', back_populates='bookings', lazy='selectin')
     cafe = relationship('Cafe', back_populates='bookings', lazy='selectin')
-    tables = relationship(
+    tables_id = relationship(
         'Table',
         secondary=booking_tables,
         back_populates='bookings',
         lazy='selectin',
     )
-    slots = relationship(
+    slots_id = relationship(
         'Slot',
         secondary=booking_slots,
         back_populates='bookings',

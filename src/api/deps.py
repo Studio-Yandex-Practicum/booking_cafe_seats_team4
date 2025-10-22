@@ -68,7 +68,7 @@ async def get_current_user(
     return user
 
 
-def require_manager_or_admin(
+async def require_manager_or_admin(
     current: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Проверяет, что текущий пользователь - менеджер или админ."""
