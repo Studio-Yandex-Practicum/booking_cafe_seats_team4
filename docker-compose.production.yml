@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: mikhail1589/scr-gateway
+    image: mikhail1589/src-gateway
     ports:
       - "8000:8000"  
     depends_on:
