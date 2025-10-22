@@ -7,14 +7,13 @@ from api.deps import get_current_user, require_manager_or_admin
 from api.validators.booking import (
     ban_change_status,
     booking_exists,
+    cafe_exists,
     check_all_objects_id,
     check_booking_date,
+    user_can_manage_cafe,
 )
 from core.db import get_session
 from crud.booking import booking_crud
-from models.cafe import Cafe
-from models.slots import Slot
-from models.table import Table
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 
@@ -36,6 +35,8 @@ async def get_list_booking(
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
+    if cafe_id:
+        await cafe_exists(cafe_id, session)
     if not await require_manager_or_admin(user):
         return await booking_crud.get_multi_booking(
             session=session,
@@ -64,11 +65,9 @@ async def create_booking(
     """
     await check_booking_date(booking.booking_date)
     await check_all_objects_id(
-        {
-            Cafe: booking.cafe_id,
-            Slot: booking.slots_id,
-            Table: booking.tables_id,
-        },
+        booking.cafe_id,
+        booking.slots_id,
+        booking.tables_id,
         session,
     )
     booking = await booking_crud.create_booking(booking, user.id, session)
@@ -122,12 +121,11 @@ async def update_booking(
     slots_id = [slot.id for slot in booking.slots_id]
     tables_id = [table.id for table in booking.tables_id]
     await check_all_objects_id(
-        {
-            Cafe: booking.cafe_id,
-            Slot: slots_id,
-            Table: tables_id,
-        },
+        booking.cafe_id,
+        slots_id,
+        tables_id,
         session,
     )
+    await user_can_manage_cafe(user, booking.cafe_id, session)
     await ban_change_status(booking, obj_in)
     return await booking_crud.update(booking, obj_in, session)
