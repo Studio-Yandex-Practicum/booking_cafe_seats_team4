@@ -19,7 +19,7 @@ class CRUDDish(CRUDBase):
             session: AsyncSession,
             cafe_id: Optional[int],
             only_active: Optional[bool] = True,
-            ) -> List[Dish]:
+    ) -> List[Dish]:
         """Возвращает список блюд.
 
         Все или для указанного cafe_id, с фильтром по is_active.
@@ -28,7 +28,7 @@ class CRUDDish(CRUDBase):
         if only_active:
             stmt = stmt.where(self.model.is_active.is_(True))
         if cafe_id is not None:
-            stmt = stmt.where(self.model.cafe_id == cafe_id)
+            stmt = stmt.where(self.model.cafe_id.any(Cafe.id == cafe_id))
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
