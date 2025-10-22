@@ -3,12 +3,11 @@ import smtplib
 from pathlib import Path
 
 from PIL import Image
-from sqlalchemy import select, create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from email.header import Header
-
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
@@ -83,7 +82,6 @@ def send_email_task(recipient: str, subject: str, body: str) -> str:
 @celery_app.task(name='send_mass_mail')
 def send_mass_mail(body: str, subject: str = 'Новая акция!') -> str:
     """Разослать письмо всем активным пользователям."""
-
     sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
     engine = create_engine(sync_database_url)
     Session = sessionmaker(bind=engine)
