@@ -2,14 +2,14 @@ from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from validators.slots import (
-    cafe_exists,
-    slot_active,
-    slot_exists,
-    user_can_manage_cafe,
-)
 
 from api.deps import get_current_user, require_manager_or_admin
+from api.responses import (
+    FORBIDDEN_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    UNAUTHORIZED_RESPONSE,
+    VALIDATION_ERROR_RESPONSE,
+)
 from api.validators.slots import (
     cafe_exists,
     slot_active,
@@ -17,18 +17,11 @@ from api.validators.slots import (
     user_can_manage_cafe,
     validate_no_time_overlap,
 )
-from responses import (
-    NOT_FOUND_RESPONSE,
-    FORBIDDEN_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
 from schemas.user import UserRole
-
 
 router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
 

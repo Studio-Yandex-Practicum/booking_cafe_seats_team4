@@ -40,12 +40,12 @@ async def check_all_objects_id(
                 f'Нет кафе с ID: {cafe_id}',
                 status.HTTP_404_NOT_FOUND,
             )
-    for id in slots_id:
-        slot = await session.get(_slots, id)
+    for slot_id in slots_id:
+        slot = await session.get(_slots, slot_id)
         if slot is None:
             return err(
                 404,
-                f'Нет временного слота с ID: {id}',
+                f'Нет временного слота с ID: {slot_id}',
                 status.HTTP_404_NOT_FOUND,
             )
 
@@ -59,6 +59,7 @@ async def check_all_objects_id(
             )
 
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+    return None
 
 
 async def check_booking_conflicts(
@@ -87,6 +88,7 @@ async def check_booking_conflicts(
             f"Столы: {conflicting_tables}",
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
+    return None
 
 
 async def check_booking_date(booking_date: date) -> None:
@@ -97,3 +99,4 @@ async def check_booking_date(booking_date: date) -> None:
             'Нельзя назначить бронь на прошедшую дату!',
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
+    return None

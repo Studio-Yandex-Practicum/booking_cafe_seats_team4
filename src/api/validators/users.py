@@ -1,16 +1,13 @@
 from typing import Iterable
 
 from fastapi import Depends
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.deps import get_current_user
 from api.exceptions import bad_request, forbidden, not_found
 from core.security import hash_password
 from models.user import User
-from schemas.user import UserCreate, UserUpdate
-
-from api.deps import get_current_user
-from schemas.user import UserRole
+from schemas.user import UserCreate, UserRole, UserUpdate
 
 
 async def get_user_or_404(user_id: int, session: AsyncSession) -> User:

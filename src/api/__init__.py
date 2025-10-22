@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
 from .endpoints import auth as auth_router
-from .endpoints import dishes as dishes_router
-from .endpoints import slots as slots_router
 from .endpoints import booking as booking_router
 from .endpoints import cafe as cafe_router
+from .endpoints import dishes as dishes_router
 from .endpoints import media as media_router
+from .endpoints import slots as slots_router
 from .endpoints import table as table_router
 from .endpoints import users as users_router
 

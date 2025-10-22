@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from core.constants import NAME_MAX
+
 from .base import BaseModel
 from .relations import booking_dishes, cafe_dishes
 
