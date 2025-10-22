@@ -7,6 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
+from core.constants import NAME_MAX
 from .base import BaseModel
 from .relations import booking_dishes, cafe_dishes
 
@@ -16,11 +17,11 @@ class Dish(BaseModel):
 
     __tablename__ = 'dishes'
 
-    name = Column(String(200), nullable=False)
+    name = Column(String(NAME_MAX), nullable=False)
     description = Column(Text, nullable=True)
     photo_id = Column(UUID(as_uuid=True), nullable=False)
-
-    cafes = relationship(
+    price = Column(Integer, nullable=False)
+    cafe_id = relationship(
         'Cafe',
         secondary=cafe_dishes,
         back_populates='dishes',

@@ -3,14 +3,12 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .base import CRUDBase
 from api.validators.dishes import check_cafe_exists
-from core.logging import get_logger
 from crud.base import CreateSchemaType, UpdateSchemaType
 from models.cafe import Cafe
 from models.dish import Dish
 
-logger = get_logger(__name__)
+from .base import CRUDBase
 
 
 class CRUDDish(CRUDBase):
@@ -26,9 +24,6 @@ class CRUDDish(CRUDBase):
 
         Все или для указанного cafe_id, с фильтром по is_active.
         """
-        logger.info(
-            f'Запрошены блюда с is_active={only_active} и cafe_id={cafe_id}',
-        )
         stmt = select(self.model)
         if only_active:
             stmt = stmt.where(self.model.is_active.is_(True))
@@ -44,12 +39,10 @@ class CRUDDish(CRUDBase):
             cafes: List[Cafe],
     ) -> Dish:
         """Создаёт новый объект в таблице Dish."""
-        logger.info(f'Запрос на создание объекта {obj_in.name}.')
         obj_in_data = obj_in.model_dump(exclude={'cafes_id'})
-        db_obj = self.model(**obj_in_data, cafes=cafes)
+        db_obj = self.model(**obj_in_data, cafe_id=cafes)
         session.add(db_obj)
         await session.commit()
-        logger.info(f'Создан новый объект блюда {db_obj.name}.')
         return db_obj
 
     async def update_dish(
@@ -59,11 +52,10 @@ class CRUDDish(CRUDBase):
         obj_in: UpdateSchemaType,
     ) -> Dish:
         """Частичное обновление объекта Dish."""
-        logger.info(f'Запрос на обновление объекта {obj_in.name}.')
         update_data = obj_in.model_dump(exclude_unset=True)
         if update_data['cafes_id'] and update_data['cafes_id'] is not None:
             cafes = await check_cafe_exists(session, update_data['cafes_id'])
-            db_obj.cafes = cafes
+            db_obj.cafe_id = cafes
             del update_data['cafes_id']
         for field, value in update_data.items():
             if hasattr(db_obj, field):
@@ -71,7 +63,6 @@ class CRUDDish(CRUDBase):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
-        logger.info(f'Обновлён объект {db_obj.name}')
         return db_obj
 
 

@@ -3,19 +3,20 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.deps import get_current_user, require_manager_or_admin
+from api.validators.users import check_user_is_manager_or_admin
+from core.db import get_session
+from crud.dishes import dish_crud
+from models.dish import Dish
+from models.user import User
+from schemas.dish import DishCreate, DishInfo, DishUpdate
+
 from ..validators.dishes import (
     check_cafe_exists,
     check_dish,
     check_dish_exists,
     check_name_unique,
 )
-from src.api.deps import get_current_user, require_manager_or_admin
-from src.api.validators.users import check_user_is_manager_or_admin
-from src.core.db import get_session
-from src.crud.dishes import dish_crud
-from src.models.dish import Dish
-from src.models.user import User
-from src.schemas.dish import DishCreate, DishInfo, DishUpdate
 
 router = APIRouter(prefix='/dishes', tags=['Блюда'])
 
