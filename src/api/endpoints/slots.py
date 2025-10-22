@@ -1,12 +1,6 @@
 from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, status
-from responses import (
-    FORBIDDEN_RESPONSE,
-    NOT_FOUND_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
@@ -82,7 +76,7 @@ async def create_slot(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
     """Создание временного слота."""
-    #проверка обязательных полей
+    # проверка обязательных полей
     if not payload.start_time or not payload.end_time:
         raise bad_request('start_time и end_time обязательны для слота')
 

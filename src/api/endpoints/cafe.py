@@ -25,7 +25,7 @@ router = APIRouter(prefix='/cafes', tags=['Кафе'])
 @router.get(
     '/',
     response_model=List[CafeInfo],
-    summary='Список столов в кафе',
+    summary='Получение списка кафе',
     responses={
         **UNAUTHORIZED_RESPONSE,
         **VALIDATION_ERROR_RESPONSE,
@@ -46,7 +46,6 @@ async def get_all_cafes(
     ] = False,
 ) -> List[CafeInfo]:
     """Получение списка кафе.
-
     Для администраторов и менеджеров - все кафе
     (с возможностью выбора), для пользователей - только активные.
     """
@@ -61,7 +60,7 @@ async def get_all_cafes(
     '/',
     response_model=CafeInfo,
     status_code=status.HTTP_200_OK,
-    summary='Новый стол в кафе',
+    summary='Создание нового кафе',
     responses={
         **SUCCESSFUL_RESPONSE,
         **CAFE_DUPLICATE_RESPONSE,
@@ -73,17 +72,18 @@ async def get_all_cafes(
 )
 async def create_cafe(
     cafe_in: CafeCreate,
+    current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Создает новое кафе. Только для администраторов и менеджеров."""
-    return await CafeService.create_cafe(session, cafe_in)
+    return await CafeService.create_cafe(session, cafe_in, current_user)
 
 
 @router.get(
     '/{cafe_id}',
     response_model=CafeInfo,
-    summary='Информация о столе в кафе по его ID',
+    summary='Получение информации о кафе по его ID',
     responses={
         **SUCCESSFUL_RESPONSE,
         **NOT_FOUND_RESPONSE,
@@ -113,7 +113,7 @@ async def get_cafe_by_id(
 @router.patch(
     '/{cafe_id}',
     response_model=CafeInfo,
-    summary='Обновление информации о столе в кафе по его ID',
+    summary='Обновление информации о кафе по его ID',
     responses={
         **SUCCESSFUL_RESPONSE,
         **NOT_FOUND_RESPONSE,
@@ -131,11 +131,13 @@ async def update_cafe(
         ),
     ],
     cafe_in: CafeUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
-
     Только для администраторов и менеджеров.
     """
-    return await CafeService.update_cafe(session, cafe_id, cafe_in)
+    return await CafeService.update_cafe(
+        session, cafe_id, cafe_in, current_user=current_user,
+    )
