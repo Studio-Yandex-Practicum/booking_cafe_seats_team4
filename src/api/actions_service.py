@@ -56,7 +56,6 @@ class ActionService:
         action_in: ActionCreate,
     ) -> ActionInfo:
         """Создаёт новую акцию."""
-
         try:
             action_db = await actions_crud.create(
                 obj_in=action_in,

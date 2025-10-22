@@ -3,7 +3,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import not_found, forbidden, bad_request
+from api.exceptions import bad_request, forbidden, not_found
 from models.cafe import Cafe
 from models.slots import Slot
 from models.user import User
@@ -48,7 +48,6 @@ async def validate_no_time_overlap(
     exclude_id: int | None = None,
 ) -> None:
     """Проверяет, что новый слот не пересекается по времени с существующими."""
-
     new_start = getattr(payload, "start_time", None)
     new_end = getattr(payload, "end_time", None)
 

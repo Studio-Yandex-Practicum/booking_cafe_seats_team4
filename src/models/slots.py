@@ -19,6 +19,6 @@ class Slot(BaseModel):
     bookings = relationship(
         'Booking',
         secondary=booking_slots,
-        back_populates='slots',
+        back_populates='slots_id',
         lazy='selectin',
     )
