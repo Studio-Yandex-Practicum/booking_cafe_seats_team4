@@ -51,8 +51,6 @@ services:
       - RABBITMQ_DEFAULT_PASS=guest
   web:
     image: mikhail1589/src-web:latest 
-    ports:
-      - "8000:8000"
     env_file:
       - ./.env
     environment:
@@ -97,8 +95,6 @@ services:
 
   flower:
     image: mikhail1589/src-web:latest
-    ports:
-      - "5555:5555"
     env_file:
       - ./.env
     environment:
