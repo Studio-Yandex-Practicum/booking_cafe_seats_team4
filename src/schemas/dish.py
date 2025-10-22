@@ -3,9 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
 from core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
-
 from .cafe import CafeShortInfo
 
 
@@ -20,7 +18,6 @@ class DishBase(BaseModel):
 
 class DishCreate(DishBase):
     """Создание блюда."""
-
     cafes_id: List[int]
 
 
@@ -32,6 +29,7 @@ class DishInfo(DishBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -41,6 +39,6 @@ class DishUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=NAME_MIN, max_length=NAME_MAX)
     description: Optional[str] = Field(None, min_length=DESCRIPTION_MIN)
     photo_id: Optional[UUID]
-    price: Optional[int] = None
-    cafes_id: Optional[List[int]] = None
-    is_active: Optional[bool] = True
+    price: Optional[int]
+    cafes_id: Optional[List[int]]
+    is_active: Optional[bool]

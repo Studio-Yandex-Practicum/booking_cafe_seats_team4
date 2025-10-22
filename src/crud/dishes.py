@@ -28,7 +28,7 @@ class CRUDDish(CRUDBase):
         if only_active:
             stmt = stmt.where(self.model.is_active.is_(True))
         if cafe_id is not None:
-            stmt = stmt.where(self.model.cafe_id.any(Cafe.id == cafe_id))
+            stmt = stmt.join(Dish.cafes).where(Cafe.id == cafe_id)
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
