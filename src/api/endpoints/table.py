@@ -128,6 +128,7 @@ async def create_table(
         ),
     ],
     table_in: TableCreate,
+    current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> TableInfo:
@@ -136,6 +137,7 @@ async def create_table(
         session=session,
         cafe_id=cafe_id,
         table_in=table_in,
+        current_user=current_user,
     )
 
 
@@ -166,6 +168,7 @@ async def update_table(
         ),
     ],
     table_in: TableUpdate,
+    current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> TableInfo:
@@ -178,4 +181,5 @@ async def update_table(
         cafe_id=cafe_id,
         table_id=table_id,
         table_in=table_in,
+        current_user=current_user,
     )

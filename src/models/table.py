@@ -23,5 +23,5 @@ class Table(BaseModel):
         'Booking',
         secondary=booking_tables,
         back_populates='tables',
-        lazy='selectin',
+        lazy='noload',
     )

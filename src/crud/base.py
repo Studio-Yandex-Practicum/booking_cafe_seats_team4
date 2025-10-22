@@ -1,11 +1,8 @@
 from typing import Generic, List, Optional, TypeVar
 
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.user import User
 
 ModelType = TypeVar('ModelType')
 CreateSchemaType = TypeVar('CreateSchemaType', bound=BaseModel)
@@ -43,12 +40,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self,
         obj_in: CreateSchemaType,
         session: AsyncSession,
-        user: Optional[User] = None,
+        user_id: Optional[int] = None,
     ) -> ModelType:
         """Создать объект из схемы `obj_in` и вернуть его."""
         obj_in_data = obj_in.model_dump()
-        if user is not None:
-            obj_in_data['user_id'] = user.id
+        if user_id is not None:
+            obj_in_data['user_id'] = user_id
         db_obj = self.model(**obj_in_data)
         session.add(db_obj)
         await session.commit()
@@ -62,11 +59,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
     ) -> ModelType:
         """Частично обновить `db_obj` данными из `obj_in` и вернуть его."""
-        obj_data = jsonable_encoder(db_obj)
         update_data = obj_in.model_dump(exclude_unset=True)
 
         for field, value in update_data.items():
-            if field in obj_data and hasattr(db_obj, field):
+            if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
 
         session.add(db_obj)

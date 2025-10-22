@@ -11,19 +11,24 @@ from api.validators.booking import (
 )
 from core.db import get_session
 from crud.booking import booking_crud
-from models import _cafe, _slots, _table, _user
+from models.cafe import Cafe
+from models.slots import Slot
+from models.table import Table
+from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
 
-@router.get('/', response_model=List[BookingInfo])
+@router.get('/', response_model=List[BookingInfo],
+            summary='Список бронирований',
+            )
 async def get_list_booking(
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> List[BookingInfo]:
     """Получение списка бронирований.
 
@@ -45,40 +50,44 @@ async def get_list_booking(
     )
 
 
-@router.post('/', response_model=BookingInfo)
+@router.post('/', response_model=BookingInfo,
+             summary='Создание бронирования')
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Создает новое бронирования.
 
     Только для авторизированных пользователей.
     """
-    await check_booking_date(booking.booking_date, session)
+    await check_booking_date(booking.booking_date)
     await check_all_objects_id(
         {
-            _cafe: booking.cafe_id,
-            _slots: booking.slots_id,
-            _table: booking.tables_id,
+            Cafe: booking.cafe_id,
+            Slot: booking.slots_id,
+            Table: booking.tables_id,
         },
         session,
     )
-    return await booking_crud.create(booking, user, session)
+    booking = await booking_crud.create_booking(booking, user.id, session)
+    return booking
 
 
-@router.get('/{booking_id}', response_model=BookingInfo)
+@router.get('/{booking_id}', response_model=BookingInfo,
+            summary='Информация о бронировании по ID',
+            )
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Получение информации о бронировании по его ID.
 
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
-    if not await require_manager_or_admin(user):
+    if not require_manager_or_admin(user):
         return await booking_crud.get_booking_current_user(
             booking_id,
             user,
@@ -87,12 +96,14 @@ async def get_booking(
     return await booking_exists(booking_id, session)
 
 
-@router.patch('/{booking_id}', response_model=BookingInfo)
+@router.patch('/{booking_id}', response_model=BookingInfo,
+              summary='Обновление бронирования по ID',
+              )
 async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,
     session: AsyncSession = Depends(get_session),
-    user: _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> BookingInfo:
     """Обновление информации о бронировании по его ID.
 
@@ -107,4 +118,4 @@ async def update_booking(
         )
 
     booking = await booking_exists(booking_id, session)
-    return await booking_crud.update(booking.id, obj_in, session)
+    return await booking_crud.update(booking, obj_in, session)

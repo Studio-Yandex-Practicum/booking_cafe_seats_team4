@@ -3,9 +3,12 @@ import uuid
 
 from fastapi import HTTPException, UploadFile, status
 
+from core.constants import MAX_LEN_MEDIA_CONTENT
 
-async def media_allowed_content_type(file: UploadFile) -> UploadFile:
+
+def media_allowed_content_type(file: UploadFile) -> UploadFile:
     """Проверяет формат файла."""
+
     content_types = ['image/jpeg', 'image/png', 'image/jpg']
     if file.content_type not in content_types:
         raise HTTPException(
@@ -18,8 +21,9 @@ async def media_allowed_content_type(file: UploadFile) -> UploadFile:
 
 async def check_len_file(file: UploadFile) -> bytes:
     """Проверяет размер файла."""
+
     contents = await file.read()
-    if len(contents) > 5_242_880:
+    if len(contents) > MAX_LEN_MEDIA_CONTENT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Размер файла не должен превышать 5Мб.',
@@ -29,6 +33,7 @@ async def check_len_file(file: UploadFile) -> bytes:
 
 def check_media_id(media_id: uuid) -> uuid:
     """Проверяет валидность uuid."""
+
     try:
         uuid.UUID(media_id, version=4)
     except ValueError:
@@ -41,6 +46,7 @@ def check_media_id(media_id: uuid) -> uuid:
 
 def media_exist(file_path: str) -> str:
     """Проверяет наличие изображения по uuid."""
+
     if not os.path.exists(file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -2,6 +2,7 @@ from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.validators.cafe import check_cafe_permissions
 from api.exceptions import err
 from api.validators.cafe import get_cafe_or_404
 from api.validators.table import get_table_in_cafe_or_404
@@ -67,10 +68,11 @@ class TableService:
         session: AsyncSession,
         cafe_id: int,
         table_in: TableCreate,
+        current_user: User,
     ) -> TableInfo:
         """Создает новый стол в указанном кафе."""
-        await get_cafe_or_404(cafe_id, session)
-
+        cafe_db = await get_cafe_or_404(cafe_id, session)
+        check_cafe_permissions(cafe=cafe_db, user=current_user)
         new_table_db = await table_crud.create(
             table_in,
             session,
@@ -85,10 +87,11 @@ class TableService:
         cafe_id: int,
         table_id: int,
         table_in: TableUpdate,
+        current_user: User,
     ) -> TableInfo:
         """Обновляет стол, проверяя его принадлежность к кафе."""
         db_table = await get_table_in_cafe_or_404(cafe_id, table_id, session)
-
+        check_cafe_permissions(cafe=db_table.cafe, user=current_user)
         updated_table_db = await table_crud.update(
             db_obj=db_table,
             obj_in=table_in,

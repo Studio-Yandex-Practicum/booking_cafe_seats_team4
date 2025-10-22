@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
+from api.exceptions import bad_request
 from api.responses import (
     FORBIDDEN_RESPONSE,
     NOT_FOUND_RESPONSE,
@@ -46,7 +47,6 @@ async def list_slots(
     session: Annotated[AsyncSession, Depends(get_session)],
     show_all: bool = False,
 ) -> List[TimeSlotInfo]:
-    """Список активных или всех временных слотов конкретного кафе."""
     cafe = await cafe_exists(cafe_id, session)
 
     only_active = True
@@ -76,6 +76,10 @@ async def create_slot(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
     """Создание временного слота."""
+    # проверка обязательных полей
+    if not payload.start_time or not payload.end_time:
+        raise bad_request('start_time и end_time обязательны для слота')
+
     cafe = await cafe_exists(payload.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
     await validate_no_time_overlap(payload, session)
@@ -95,7 +99,6 @@ async def get_slot(
     slot_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
-    """Получить слот по ID (только активный)."""
     slot = await slot_exists(slot_id, session)
     slot_active(slot)
     return slot
@@ -119,14 +122,21 @@ async def update_slot(
     current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
-    """Обновить временной слот или деактивировать его."""
     slot = await slot_exists(slot_id, session)
     slot_active(slot)
     cafe = await cafe_exists(slot.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
-    # Проверка пересечения по времени
-    await validate_no_time_overlap(payload, session, exclude_id=slot_id)
-    # Если is_active=False → деактивируем слот
+
+    # проверка на частичное обновление времени
+    if (payload.start_time is not None or payload.end_time is not None) and \
+       (payload.start_time is None or payload.end_time is None):
+        raise bad_request(
+            'Для обновления времени оба поля start_time и end_time обязательны',
+        )
+
+    if payload.start_time and payload.end_time:
+        await validate_no_time_overlap(payload, session, exclude_id=slot_id)
+
     if payload.is_active is not None and payload.is_active is False:
         return await slot_crud.deactivate(slot, session)
     return await slot_crud.update(slot, payload, session)
