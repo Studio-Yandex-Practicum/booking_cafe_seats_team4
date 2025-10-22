@@ -1,8 +1,12 @@
+from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.base import CRUDBase
 from models.booking import Booking
+from models.slots import Slot
+from models.table import Table
 from models.user import User
 from schemas.booking import BookingCreate, BookingUpdate
 
@@ -40,6 +44,32 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             ),
         )
         return query.scalars().first()
+
+    async def create_booking(
+        self,
+        obj_in: BookingCreate,
+        user_id: Optional[int] = None,
+        session: AsyncSession = None,
+    ) -> Booking:
+        """Создать бронирование с обработкой отношений."""
+        slots = await session.execute(
+            select(Slot).where(Slot.id.in_(obj_in.slots_id)),
+        )
+        slots_objs = slots.scalars().all()
+        tables = await session.execute(
+            select(Table).where(Table.id.in_(obj_in.tables_id)),
+        )
+        tables_objs = tables.scalars().all()
+        obj_in_data = obj_in.model_dump(exclude={'slots_id', 'tables_id'})
+        if user_id is not None:
+            obj_in_data['user_id'] = user_id
+        db_obj = self.model(**obj_in_data)
+        db_obj.slots_id = slots_objs
+        db_obj.tables_id = tables_objs
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+        return db_obj
 
 
 booking_crud = CRUDBooking(Booking)

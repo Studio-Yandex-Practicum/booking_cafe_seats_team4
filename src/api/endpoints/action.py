@@ -13,9 +13,9 @@ from api.responses import (
     UNAUTHORIZED_RESPONSE,
     VALIDATION_ERROR_RESPONSE,
 )
-from core.email_templates import ACTION_TEMPLATE
-from core.db import get_session
 from celery_tasks.tasks import send_mass_mail
+from core.db import get_session
+from core.email_templates import ACTION_TEMPLATE
 from models.user import User
 from schemas.action import ActionCreate, ActionInfo, ActionUpdate
 
@@ -75,10 +75,9 @@ async def create_action(
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> ActionInfo:
     """Создает новую акцию. Только для администраторов и менеджеров."""
-
     action = await ActionService.create_action(session, action_in)
     email_body = ACTION_TEMPLATE.format(
-        action_description=action_in.description
+        action_description=action_in.description,
     )
     send_mass_mail.delay(body=email_body)
     return action

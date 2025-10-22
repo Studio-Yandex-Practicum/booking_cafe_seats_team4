@@ -18,7 +18,7 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         self,
         obj_id: int,
         session: AsyncSession,
-        show_all: bool = False
+        show_all: bool = False,
     ) -> Action | None:
         """Получение акций с загрузкой связанных кафк."""
         result = (
@@ -51,7 +51,6 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
             obj_in: ActionCreate,
             session: AsyncSession) -> Action:
         """Создание акции с обработкой связи many-to-many c кафе."""
-
         obj_in_data = obj_in.model_dump(exclude={'cafes_id'})
         db_action = self.model(**obj_in_data)
         if obj_in.cafes_id:
@@ -74,7 +73,6 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         session: AsyncSession,
     ) -> Action:
         """Обновление акции и связи с кафе."""
-
         update_data = obj_in.model_dump(exclude_unset=True)
         simple_data = {
             k: v for k, v in update_data.items() if k != 'cafes_id'
