@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
 from api.validators.booking import (
+    ban_change_status,
     booking_exists,
     check_all_objects_id,
     check_booking_date,
-    ban_change_status,
 )
 from core.db import get_session
 from crud.booking import booking_crud

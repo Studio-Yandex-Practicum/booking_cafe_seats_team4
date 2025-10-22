@@ -4,11 +4,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import bad_request, not_found
-from schemas.booking import BookingCreate
 from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
 from models.slots import Slot
 from models.table import Table
+from schemas.booking import BookingCreate
 
 
 async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
@@ -98,13 +98,16 @@ async def check_booking_date(booking_date: date) -> None:
 
 async def ban_change_status(
         booking: Booking,
-        obj_in: BookingCreate
+        obj_in: BookingCreate,
 ) -> None:
+    """Проверяет, что изменить прошедшее и активное бронирование по полю status
+    нельзя.
+    """
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, _ in update_data.items():
         if field == 'status' and (
             booking.is_active == True or booking.booking_date < date.today()
         ):
             raise bad_request(
-                'Нельзя изменить прошедшее и активное бронирование!'
+                'Нельзя изменить прошедшее и активное бронирование!',
             )
