@@ -7,6 +7,7 @@ from api.deps import get_current_user, require_manager_or_admin
 from api.validators.booking import (
     ban_change_status,
     booking_exists,
+    cafe_exists,
     check_all_objects_id,
     check_booking_date,
     user_can_manage_cafe,
@@ -34,6 +35,8 @@ async def get_list_booking(
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
+    if cafe_id:
+        await cafe_exists(cafe_id, session)
     if not await require_manager_or_admin(user):
         return await booking_crud.get_multi_booking(
             session=session,

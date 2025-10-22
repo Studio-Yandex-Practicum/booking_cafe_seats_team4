@@ -114,11 +114,17 @@ async def ban_change_status(
             )
 
 
-async def user_can_manage_cafe(user: User, cafe_id: int, session) -> None:
-    """Проверяет, что текущий пользователь может управлять данным кафе."""
+async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
+    """Проверяет, что кафе существует и активно."""
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None or not cafe.is_active:
         raise not_found('Такого кафе нет или оно не активно.')
+    return cafe
+
+
+async def user_can_manage_cafe(user: User, cafe_id: int, session) -> None:
+    """Проверяет, что текущий пользователь может управлять данным кафе."""
+    cafe = await cafe_exists(cafe_id, session)
     if user.role == int(UserRole.ADMIN):
         return
     if user.role == int(UserRole.MANAGER):
