@@ -8,6 +8,7 @@ from api.validators.booking import (
     booking_exists,
     check_all_objects_id,
     check_booking_date,
+    ban_change_status,
 )
 from core.db import get_session
 from crud.booking import booking_crud
@@ -118,4 +119,15 @@ async def update_booking(
         )
 
     booking = await booking_exists(booking_id, session)
+    slots_id = [slot.id for slot in booking.slots_id]
+    tables_id = [table.id for table in booking.tables_id]
+    await check_all_objects_id(
+        {
+            Cafe: booking.cafe_id,
+            Slot: slots_id,
+            Table: tables_id,
+        },
+        session,
+    )
+    await ban_change_status(booking, obj_in)
     return await booking_crud.update(booking, obj_in, session)
