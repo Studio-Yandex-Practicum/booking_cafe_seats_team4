@@ -76,7 +76,7 @@ async def create_slot(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
     """Создание временного слота."""
-    #  проверка обязательных полей
+    # проверка обязательных полей
     if not payload.start_time or not payload.end_time:
         raise bad_request('start_time и end_time обязательны для слота')
 

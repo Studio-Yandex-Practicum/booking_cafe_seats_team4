@@ -63,5 +63,24 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         result = await session.execute(query)
         return result.scalars().first()
 
+    async def update(
+        self,
+        db_obj: Table,
+        obj_in: TableUpdate,
+        session: AsyncSession,
+    ) -> Table:
+        """Обновляет стол с контролируемой загрузкой relationships."""
+        update_data = obj_in.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            if hasattr(db_obj, field):
+                setattr(db_obj, field, value)
+
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+
+        return db_obj
+
 
 table_crud = CRUDTable(Table)
