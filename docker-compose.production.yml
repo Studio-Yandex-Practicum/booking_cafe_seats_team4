@@ -41,7 +41,7 @@ services:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
   web:
-    build: .
+    image: mikhail1589/src-web:latest 
     ports:
       - "8000:8000"
     env_file:
@@ -66,7 +66,7 @@ services:
       "
 
   celery-worker:
-    build: .
+    build: mikhail1589/src-web:latest
     env_file:
       - ./.env
     environment:
@@ -87,7 +87,7 @@ services:
     restart: unless-stopped
 
   flower:
-    build: .
+    build: mikhail1589/src-web:latest
     ports:
       - "5555:5555"
     env_file:
