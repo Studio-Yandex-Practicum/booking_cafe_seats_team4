@@ -1,47 +1,46 @@
-from decimal import Decimal
-from typing import Annotated
+from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-from pydantic.config import ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-# Удобные типы с ограничениями
-PositiveInt = Annotated[int, Field(ge=1)]
-Money = Annotated[Decimal, Field(ge=0)]
-NameStr = Annotated[str, Field(min_length=1, max_length=200)]
+from core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
+
+from .cafe import CafeShortInfo
 
 
 class DishBase(BaseModel):
     """Базовая схема блюда."""
 
-    cafe_id: PositiveInt
-    name: NameStr
-    price: Money
-    description: str | None = None
-    is_available: bool = True
-    media_id: UUID | None = None
-    active: bool = True
+    name: str = Field(..., min_length=NAME_MIN, max_length=NAME_MAX)
+    description: str = Field(..., min_length=DESCRIPTION_MIN)
+    photo_id: UUID
+    price: int
 
 
 class DishCreate(DishBase):
     """Создание блюда."""
 
-    pass
+    cafes_id: List[int]
+
+
+class DishInfo(DishBase):
+    """Информация о блюде."""
+
+    id: int
+    cafes: List[CafeShortInfo]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DishUpdate(BaseModel):
     """Частичное обновление блюда."""
 
-    name: NameStr | None = None
-    price: Money | None = None
-    description: str | None = None
-    is_available: bool | None = None
-    media_id: UUID | None = None
-    active: bool | None = None
-
-
-class DishOut(DishBase):
-    """Ответ с блюдом."""
-
-    id: int
-    model_config = ConfigDict(from_attributes=True)
+    name: Optional[str] = Field(None, min_length=NAME_MIN, max_length=NAME_MAX)
+    description: Optional[str] = Field(None, min_length=DESCRIPTION_MIN)
+    photo_id: Optional[UUID]
+    price: Optional[int] = None
+    cafes_id: Optional[List[int]] = None
+    is_active: Optional[bool] = True
