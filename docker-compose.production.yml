@@ -75,7 +75,7 @@ services:
       "
 
   celery-worker:
-    build: mikhail1589/src-web:latest
+    build: mikhail1589/src-celery-worker:latest
     env_file:
       - ./.env
     environment:
@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
 
   flower:
-    build: mikhail1589/src-web:latest
+    build: mikhail1589/src-flower:latest
     ports:
       - "5555:5555"
     env_file:
