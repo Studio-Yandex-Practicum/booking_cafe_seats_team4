@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    build: src/nginx
+    image: mikhail1589/scr-gateway
     ports:
       - "8000:8000"  
     depends_on:
@@ -75,7 +75,7 @@ services:
       "
 
   celery-worker:
-    build: mikhail1589/src-web:latest
+    image: mikhail1589/src-web:latest
     env_file:
       - ./.env
     environment:
@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
 
   flower:
-    build: mikhail1589/src-web:latest
+    image: mikhail1589/src-web:latest
     ports:
       - "5555:5555"
     env_file:
