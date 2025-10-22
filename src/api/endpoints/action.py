@@ -84,6 +84,7 @@ async def create_action(
 
 ) -> ActionInfo:
     """Создает новую акцию. Только для администраторов и менеджеров."""
+    
     action = await ActionService.create_action(session, action_in)
     email_body = ACTION_TEMPLATE.format(
         action_description=action_in.description,
