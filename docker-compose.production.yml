@@ -105,7 +105,7 @@ services:
       --port=5555 
       --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD}
       --url_prefix=/flower
-      --broker_api=http://guest:guest@rabbitmq:15672/api/
+      --broker_api=http://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@@rabbitmq:15672/api/
 
     restart: unless-stopped
 volumes:
