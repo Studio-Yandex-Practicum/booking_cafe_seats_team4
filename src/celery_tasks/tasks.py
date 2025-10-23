@@ -56,7 +56,7 @@ def get_image_task(media_id: str) -> str:
     return media_exist(MEDIA_PATH / filename)
 
 
-def send_email_smtp(recipient: str, body: str, subject: str) -> bool:
+def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
     """Общая функция для отправки email через SMTP."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
