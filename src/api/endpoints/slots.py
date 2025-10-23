@@ -1,10 +1,10 @@
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import get_current_user, require_manager_or_admin
-from api.exceptions import bad_request
+from api.deps import get_current_user_optional, require_manager_or_admin
+from api.exceptions import err
 from api.responses import (
     FORBIDDEN_RESPONSE,
     NOT_FOUND_RESPONSE,
@@ -13,7 +13,6 @@ from api.responses import (
 )
 from api.validators.slots import (
     cafe_exists,
-    slot_active,
     slot_exists,
     user_can_manage_cafe,
     validate_no_time_overlap,
@@ -24,17 +23,16 @@ from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
 from schemas.user import UserRole
 
-router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
+router = APIRouter(
+    prefix='/cafe/{cafe_id}/time_slots',
+    tags=['Временные слоты']
+)
 
 
 @router.get(
     '',
     response_model=List[TimeSlotInfo],
     summary='Получить список временных слотов кафе',
-    description=(
-        'Показывает все активные слоты. '
-        'Менеджер или администратор могут запросить все, включая неактивные.'
-    ),
     responses={
         **NOT_FOUND_RESPONSE,
         **FORBIDDEN_RESPONSE,
@@ -42,25 +40,23 @@ router = APIRouter(prefix='/cafe/slots', tags=['Временные слоты'])
     },
 )
 async def list_slots(
-    cafe_id: int,
-    current_user: Annotated[User | None, Depends(get_current_user)],
+    cafe_id: Annotated[int, Path(description='ID кафе')],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)],
     session: Annotated[AsyncSession, Depends(get_session)],
     show_all: bool = False,
 ) -> List[TimeSlotInfo]:
-    """Вернуть список слотов кафе.
-
-    По умолчанию возвращаются только активные слоты. Если указать
-    `show_all=true` и у пользователя роль менеджера или администратора,
-    вернутся все слоты, включая неактивные.
-    """
+    """Вернуть список слотов кафе."""
     cafe = await cafe_exists(cafe_id, session)
 
     only_active = True
-    if show_all and current_user:
-        if current_user.role in (int(UserRole.ADMIN), int(UserRole.MANAGER)):
-            only_active = False
+    if show_all and current_user and current_user.role in (
+        int(UserRole.ADMIN),
+        int(UserRole.MANAGER)
+    ):
+        only_active = False
 
-    return await slot_crud.get_by_cafe(cafe.id, session, only_active)
+    slots = await slot_crud.get_by_cafe(cafe.id, session, only_active)
+    return [TimeSlotInfo.model_validate(slot, from_attributes=True) for slot in slots]
 
 
 @router.post(
@@ -68,7 +64,6 @@ async def list_slots(
     response_model=TimeSlotInfo,
     status_code=status.HTTP_201_CREATED,
     summary='Создать временной слот',
-    description='Создание доступно только менеджеру данного кафе.',
     responses={
         **UNAUTHORIZED_RESPONSE,
         **FORBIDDEN_RESPONSE,
@@ -77,18 +72,20 @@ async def list_slots(
     },
 )
 async def create_slot(
+    cafe_id: Annotated[int, Path(description='ID кафе')],
     payload: TimeSlotCreate,
     current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
     """Создание временного слота."""
-    if not payload.start_time or not payload.end_time:
-        raise bad_request('start_time и end_time обязательны для слота')
-
-    cafe = await cafe_exists(payload.cafe_id, session)
+    cafe = await cafe_exists(cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
-    await validate_no_time_overlap(payload, session)
-    return await slot_crud.create(payload, session)
+    await validate_no_time_overlap(payload, session, cafe_id)
+    slot = await slot_crud.create_with_cafe_id(
+        payload,
+        session,
+        cafe_id=cafe_id)
+    return TimeSlotInfo.model_validate(slot, from_attributes=True)
 
 
 @router.get(
@@ -100,24 +97,29 @@ async def create_slot(
         **VALIDATION_ERROR_RESPONSE,
     },
 )
-async def get_slot(
-    slot_id: int,
+async def get_time_slot_by_id(
+    cafe_id: Annotated[int, Path(description='ID кафе')],
+    slot_id: Annotated[int, Path(description='ID слота')],
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)],
 ) -> TimeSlotInfo:
-    """Вернуть активный слот по ID.
-
-    Если слот не найден или деактивирован, будет ошибка 404.
-    """
+    """Вернуть активный слот по ID."""
+    await cafe_exists(cafe_id, session)
     slot = await slot_exists(slot_id, session)
-    slot_active(slot)
-    return slot
+    if slot.cafe_id != cafe_id:
+        raise err('NOT_FOUND', 'Слот не найден в данном кафе', 404)
+    if (not current_user or current_user.role == UserRole.USER) and not slot.is_active:
+        raise err('NOT_FOUND', 'Слот не найден', 404)
+    if current_user and current_user.role == UserRole.MANAGER:
+        cafe = await cafe_exists(cafe_id, session)
+        user_can_manage_cafe(current_user, cafe)
+    return TimeSlotInfo.model_validate(slot, from_attributes=True)
 
 
 @router.patch(
     '/{slot_id}',
     response_model=TimeSlotInfo,
     summary='Обновить или деактивировать слот',
-    description='Менеджер своего кафе или администратор могут изменить слот.',
     responses={
         **UNAUTHORIZED_RESPONSE,
         **FORBIDDEN_RESPONSE,
@@ -125,34 +127,34 @@ async def get_slot(
         **NOT_FOUND_RESPONSE,
     },
 )
-async def update_slot(
-    slot_id: int,
+async def update_time_slot_by_id(
+    cafe_id: Annotated[int, Path(description='ID кафе')],
+    slot_id: Annotated[int, Path(description='ID слота')],
     payload: TimeSlotUpdate,
     current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
-    """Обновить параметры слота или деактивировать его.
-
-    Менять может админ или менеджер, управляющий этим кафе. При изменении
-    времени оба поля `start_time` и `end_time` обязательны. Проверяется
-    пересечение времени с другими слотами.
-    """
+    """Обновить параметры слота или деактивировать его."""
+    cafe = await cafe_exists(cafe_id, session)
     slot = await slot_exists(slot_id, session)
-    slot_active(slot)
-    cafe = await cafe_exists(slot.cafe_id, session)
+    if slot.cafe_id != cafe_id:
+        raise err('NOT_FOUND', 'Слот не найден в данном кафе', 404)
     user_can_manage_cafe(current_user, cafe)
 
     if (payload.start_time is not None or payload.end_time is not None) and (
         payload.start_time is None or payload.end_time is None
     ):
-        raise bad_request(
-            'Для обновления времени оба поля start_time и '
-            'end_time обязательны',
-        )
+        raise err(
+            'BAD_REQUEST',
+            'Для обновления времени поля start_time и end_time обязательны',
+            400)
 
     if payload.start_time and payload.end_time:
-        await validate_no_time_overlap(payload, session, exclude_id=slot_id)
-
-    if payload.is_active is not None and payload.is_active is False:
-        return await slot_crud.deactivate(slot, session)
-    return await slot_crud.update(slot, payload, session)
+        await validate_no_time_overlap(
+            payload,
+            session,
+            cafe_id,
+            exclude_id=slot_id
+        )
+    updated_slot = await slot_crud.update(slot, payload, session)
+    return TimeSlotInfo.model_validate(updated_slot, from_attributes=True)
