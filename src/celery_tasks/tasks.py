@@ -56,7 +56,7 @@ def get_image_task(media_id: str) -> str:
     return media_exist(MEDIA_PATH / filename)
 
 
-def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
+def send_email_smtp(recipient: str, body: str, subject: str) -> bool:
     """Общая функция для отправки email через SMTP."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
@@ -109,7 +109,7 @@ def send_mass_mail(body: str, subject: str = 'Новая акция') -> str:
             return 'Нет активных пользователей'
         successful_sends = 0
         for recipient in recipients:
-            success = send_email_smtp(recipient.email, subject, body)
+            success = send_email_smtp(recipient.email, body, subject)
             if success:
                 successful_sends += 1
         return f'Сообщение отправлено {successful_sends} пользователям'
