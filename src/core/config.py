@@ -59,8 +59,8 @@ class Settings:
     LOG_FILE: str | None = os.getenv('LOG_FILE')
 
     # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
-    REDIS_CACHE_TTL: int = 300
+    REDIS_URL: str = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+    REDIS_CACHE_TTL: int = os.getenv('REDIS_CACHE_TTL', 300)
 
 
 settings = Settings()
