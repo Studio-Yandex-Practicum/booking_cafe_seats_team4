@@ -45,17 +45,6 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
         return {'media_id': media_id, 'error': str(e)}
 
 
-@celery_app.task(name='get_image_task')
-def get_image_task(media_id: str) -> str:
-    """Celery задача для получения изображения по ID."""
-    from api.validators.media import check_media_id, media_exist
-
-    media_id = check_media_id(media_id)
-    filename = f'{media_id}.jpg'
-    # RET504: возвращаем результат напрямую без промежуточного присваивания
-    return media_exist(MEDIA_PATH / filename)
-
-
 def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
     """Общая функция для отправки email через SMTP."""
     try:
