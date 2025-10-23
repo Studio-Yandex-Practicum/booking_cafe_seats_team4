@@ -84,33 +84,6 @@ def create_sync_session():
     return session, engine
 
 
-@celery_app.task(name='save_image')
-def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
-    """Сохранить картинку как JPEG `<media_id>.jpg`."""
-
-    try:
-        image = Image.open(io.BytesIO(image_data))
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        filename = f'{media_id}.jpg'
-        file_path = MEDIA_PATH / filename
-        image.save(file_path, 'JPEG', optimize=True)
-        return {'media_id': media_id}
-    except Exception as e:  # noqa: BLE001
-        return {'media_id': media_id, 'error': str(e)}
-
-
-@celery_app.task(name='get_image_task')
-def get_image_task(media_id: str) -> str:
-    """Celery задача для получения изображения по ID."""
-    from api.validators.media import check_media_id, media_exist
-    media_id = check_media_id(media_id)
-    filename = f'{media_id}.jpg'
-    file_path = MEDIA_PATH / filename
-    file_path = media_exist(file_path)
-    return file_path
-
-
 @celery_app.task(name='send_email_task')
 def send_email_task(
     recipient: str,
@@ -145,7 +118,7 @@ def send_mass_mail(body: str, subject: str = 'Новая акция!') -> str:
         engine.dispose()
 
 
-@celery_app.task(name='send_booling_notification')
+@celery_app.task(name='send_booking_notification')
 def send_booking_notification(
         booking_id: int,
         reminder_task_id: Optional[str] = None) -> str:
