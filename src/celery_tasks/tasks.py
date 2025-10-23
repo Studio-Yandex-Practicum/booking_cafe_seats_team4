@@ -98,7 +98,7 @@ def send_email_task(
 
 
 @celery_app.task(name='send_mass_mail')
-def send_mass_mail(subject: str, body: str) -> str:
+def send_mass_mail(body: str, subject: str = 'Новая акция') -> str:
     """Разослать письмо всем активным пользователям."""
 
     session, engine = create_sync_session()
