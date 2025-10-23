@@ -1,6 +1,7 @@
 import io
 import smtplib
 from datetime import datetime, timedelta
+
 from email.header import Header
 from email.mime.text import MIMEText
 from email.utils import formatdate
@@ -28,9 +29,35 @@ SMTP_USERNAME = settings.SMTP_USERNAME
 SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 
+@celery_app.task(name='save_image')
+def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
+    """Сохранить картинку как JPEG `<media_id>.jpg`."""
+
+    try:
+        image = Image.open(io.BytesIO(image_data))
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        filename = f'{media_id}.jpg'
+        file_path = MEDIA_PATH / filename
+        image.save(file_path, 'JPEG', optimize=True)
+        return {'media_id': media_id}
+    except Exception as e:  # noqa: BLE001
+        return {'media_id': media_id, 'error': str(e)}
+
+
+@celery_app.task(name='get_image_task')
+def get_image_task(media_id: str) -> str:
+    """Celery задача для получения изображения по ID."""
+    from api.validators.media import check_media_id, media_exist
+
+    media_id = check_media_id(media_id)
+    filename = f'{media_id}.jpg'
+    # RET504: возвращаем результат напрямую без промежуточного присваивания
+    return media_exist(MEDIA_PATH / filename)
+
+
 def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
     """Общая функция для отправки email через SMTP."""
-
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
@@ -91,12 +118,10 @@ def send_email_task(
     subject: str = 'Новое бронирование!',
 ) -> str:
     """Отправить одно письмо пользователю или менеджеру."""
-
     success = send_email_smtp(recipient, subject, body)
     if success:
         return f'Cообщение отправлено {recipient}'
-    else:
-        return f'Ошибка отправки сообщения для {recipient}'
+    return f'Ошибка отправки сообщения для {recipient}'
 
 
 @celery_app.task(name='send_mass_mail')

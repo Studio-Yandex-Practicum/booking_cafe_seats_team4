@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterator
-from http import HTTPStatus
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import (
@@ -8,12 +7,12 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import declarative_base
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
-
 
 Base = declarative_base()
 
@@ -36,26 +35,14 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         logger.info('Сессия открыта')
         try:
             yield session
-            # Коммит убираем отсюда. Коммитить нужно в CRUD-слое,
-            # где происходит изменение данных. Зависимость не должна
-            # неявно коммитить всё подряд.
-            # await session.commit()
-        except HTTPException as e:
-            # Если это HTTPException, его нужно просто пробросить дальше.
-            # Не логируем его как ошибку,
-            # т.к. это ожидаемое поведение (404, 403 и т.д.).
-            # На всякий случай, если были изменения до ошибки
+        except (HTTPException, StarletteHTTPException) as e:
             await session.rollback()
-            logger.info(f'HTTP исключение в сессии, откатываем: {e.detail}')
-            raise e
-        except Exception as err:
-            logger.error(f'Ошибка в сессии: {err}', exc_info=True)
+            logger.info('HTTP исключение в сессии, откатываем: %s', e.detail)
+            raise
+        except Exception:
             await session.rollback()
-            # Можно выбросить свою кастомную 500 ошибку или стандартную
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail='Internal Server Error',
-            )
+            logger.exception('Ошибка в сессии, откатываем')
+            raise
         finally:
             logger.info('Сессия закрыта.')
 

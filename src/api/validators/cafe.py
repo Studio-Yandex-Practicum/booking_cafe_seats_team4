@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.exceptions import err
 from crud.cafe import cafe_crud
 from models.cafe import Cafe
-from schemas.user import UserRole
 from models.user import User
+from schemas.user import UserRole
 
 
 async def get_cafe_or_404(cafe_id: int, session: AsyncSession) -> Cafe:
@@ -32,7 +32,6 @@ def check_cafe_permissions(
     - Администратор может всё.
     - Менеджер может управлять только своим кафе.
     """
-
     if user.role == UserRole.ADMIN:
         return
     if user.role == UserRole.MANAGER:

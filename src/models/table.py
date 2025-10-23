@@ -22,6 +22,6 @@ class Table(BaseModel):
     bookings = relationship(
         'Booking',
         secondary=booking_tables,
-        back_populates='tables',
+        back_populates='tables_id',
         lazy='noload',
     )

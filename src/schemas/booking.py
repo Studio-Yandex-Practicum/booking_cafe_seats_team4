@@ -23,7 +23,6 @@ class BookingStatus(IntEnum):
 class BookingBase(BaseModel):
     """Базовая схема бронирования."""
 
-    user_id: int
     cafe_id: int
     tables_id: List[int]
     slots_id: List[int]
@@ -45,8 +44,6 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     """Схема для создания бронирования."""
-
-    pass
 
 
 class BookingUpdate(BaseModel):
@@ -85,6 +82,7 @@ class BookingUpdate(BaseModel):
 class BookingShortInfo(BaseModel):
     """Краткая информация о бронировании."""
 
+    user_id: int
     id: int
     booking_date: date
     status: BookingStatus

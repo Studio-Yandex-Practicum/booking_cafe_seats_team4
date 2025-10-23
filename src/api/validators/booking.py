@@ -1,13 +1,17 @@
 from datetime import date
+from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import bad_request, not_found
+from api.exceptions import bad_request, forbidden, not_found
 from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
 from models.slots import Slot
 from models.table import Table
+from models.user import User
+from schemas.booking import BookingCreate
+from schemas.user import UserRole
 
 
 async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
@@ -19,23 +23,22 @@ async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
 
 
 async def check_all_objects_id(
-    objects_dict: dict,
+    cafe_id: int,
+    slots_id: List[int],
+    tables_id: List[int],
     session: AsyncSession,
 ) -> None:
     """Проверяет существование кафе, слотов и столов по их ID.
+
     Затем валидирует отсутствие конфликтующих бронирований.
     """
-    cafe_id = objects_dict[Cafe]
-    slots_id = objects_dict[Slot]
-    tables_id = objects_dict[Table]
-
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None:
         raise not_found(f'Нет кафе с ID: {cafe_id}')
-    for id in slots_id:
-        slot = await session.get(Slot, id)
+    for slot_id in slots_id:
+        slot = await session.get(Slot, slot_id)
         if slot is None:
-            raise not_found(f'Нет временного слота с ID: {id}')
+            raise not_found(f'Нет временного слота с ID: {slot_id}')
 
     for table_id in tables_id:
         table = await session.get(Table, table_id)
@@ -43,7 +46,6 @@ async def check_all_objects_id(
             raise not_found(f'Нет стола с ID: {table_id}')
 
     await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
-    return None  # RET503
 
 
 async def check_booking_conflicts(
@@ -79,12 +81,12 @@ async def check_booking_conflicts(
                     conflicting_tables.add(table.id)
         err_msg = []
         if conflicting_slots:
-            err_msg.append(f"Слоты уже заняты: {sorted(conflicting_slots)}")
+            err_msg.append(f'Слоты уже заняты: {sorted(conflicting_slots)}')
         if conflicting_tables:
-            err_msg.append(f"Столы уже заняты: {sorted(conflicting_tables)}")
+            err_msg.append(f'Столы уже заняты: {sorted(conflicting_tables)}')
 
         raise bad_request(
-            "Найдены конфликтующие бронирования. " + "; ".join(err_msg),
+            'Найдены конфликтующие бронирования. ' + '; '.join(err_msg),
         )
 
 
@@ -94,3 +96,41 @@ async def check_booking_date(booking_date: date) -> None:
         raise bad_request(
             'Нельзя назначить бронь на прошедшую дату!',
         )
+
+
+async def ban_change_status(
+    booking: Booking,
+    obj_in: BookingCreate,
+) -> None:
+    """Изменить прошедшее и активное бронирование по полю status нельзя."""
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, _ in update_data.items():
+        if field == 'status' and (
+            booking.is_active or booking.booking_date < date.today()
+        ):
+            raise bad_request(
+                'Нельзя изменить прошедшее и активное бронирование!',
+            )
+
+
+async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
+    """Проверяет, что кафе существует и активно."""
+    cafe = await session.get(Cafe, cafe_id)
+    if cafe is None or not cafe.is_active:
+        raise not_found('Такого кафе нет или оно не активно.')
+    return cafe
+
+
+async def user_can_manage_cafe(
+    user: User,
+    cafe_id: int,
+    session: AsyncSession,
+) -> None:
+    """Проверяет, что текущий пользователь может управлять данным кафе."""
+    cafe = await cafe_exists(cafe_id, session)
+    if user.role == int(UserRole.ADMIN):
+        return
+    if user.role == int(UserRole.MANAGER):
+        if cafe in user.managed_cafes:
+            return
+    raise forbidden('У вас нет прав доступа.')
