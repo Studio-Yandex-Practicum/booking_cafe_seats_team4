@@ -3,14 +3,29 @@ from typing import Annotated, Optional
 from fastapi import Depends, HTTPException, Request, Response, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
+from sqlalchemy import select
 
 from core.db import get_session
 from core.security import TokenError, decode_token
 from models.user import User
-from schemas.user import UserRole
+from schemas.user import UserInfo, UserRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
 bearer_optional = HTTPBearer(auto_error=False)
+
+
+USER_FIELDS_TO_LOAD = [
+    User.id,
+    User.username,
+    User.email,
+    User.phone,
+    User.tg_id,
+    User.role,
+    User.is_active,
+    User.created_at,
+    User.updated_at,
+]
 
 
 async def get_current_user(
@@ -20,7 +35,7 @@ async def get_current_user(
         Security(bearer_scheme),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
+) -> UserInfo:
     """Возвращает текущего пользователя по Bearer-токену."""
     if creds is None:
         raise HTTPException(
@@ -49,7 +64,13 @@ async def get_current_user(
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
-    user = await session.get(User, user_id)
+    query = (
+        select(User)
+        .where(User.id == user_id)
+        .options(load_only(*USER_FIELDS_TO_LOAD))
+    )
+    result = await session.execute(query)
+    user = result.scalars().first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -61,7 +82,7 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Inactive user',
         )
-    return user
+    return UserInfo.model_validate(user)
 
 
 async def get_current_user_optional(
@@ -70,7 +91,7 @@ async def get_current_user_optional(
         Optional[HTTPAuthorizationCredentials],
         Security(bearer_optional),
     ] = None,
-) -> Optional[User]:
+) -> Optional[UserInfo]:
     """Вернёт активного пользователя или None (без 401/403)."""
     if not creds or not creds.credentials:
         return None
@@ -87,10 +108,17 @@ async def get_current_user_optional(
     except (TypeError, ValueError):
         return None
 
-    user = await session.get(User, user_id)
+    query = (
+        select(User)
+        .where(User.id == user_id)
+        .options(load_only(*USER_FIELDS_TO_LOAD))
+    )
+    result = await session.execute(query)
+    user = result.scalars().first()
+
     if not user or not user.is_active:
         return None
-    return user
+    return UserInfo.model_validate(user)
 
 
 async def inject_user_into_state(
@@ -103,7 +131,7 @@ async def inject_user_into_state(
 
 async def require_manager_or_admin(
     current: Annotated[User, Depends(get_current_user)],
-) -> User:
+) -> UserInfo:
     """Проверяет, что текущий пользователь - менеджер или админ."""
     if current.role not in (int(UserRole.MANAGER), int(UserRole.ADMIN)):
         raise HTTPException(
