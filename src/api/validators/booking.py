@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import bad_request, forbidden, not_found
+from api.exceptions import bad_request, forbidden, not_found, unprocessable
 from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
 from models.slots import Slot
@@ -34,10 +34,10 @@ async def check_all_objects_id(
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None:
         raise not_found(f'Нет кафе с ID: {cafe_id}')
-    for id in slots_id:
-        slot = await session.get(Slot, id)
+    for slot_id in slots_id:
+        slot = await session.get(Slot, slot_id)
         if slot is None:
-            raise not_found(f'Нет временного слота с ID: {id}')
+            raise not_found(f'Нет временного слота с ID: {slot_id}')
 
     for table_id in tables_id:
         table = await session.get(Table, table_id)
@@ -92,7 +92,7 @@ async def check_booking_conflicts(
 async def check_booking_date(booking_date: date) -> None:
     """Проверяет, что дата бронирования не в прошлом."""
     if booking_date < date.today():
-        raise bad_request(
+        raise unprocessable(
             'Нельзя назначить бронь на прошедшую дату!',
         )
 
@@ -107,7 +107,7 @@ async def ban_change_status(
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, _ in update_data.items():
         if field == 'status' and (
-            booking.is_active == True or booking.booking_date < date.today()
+            booking.is_active is True or booking.booking_date < date.today()
         ):
             raise bad_request(
                 'Нельзя изменить прошедшее и активное бронирование!',
@@ -122,7 +122,9 @@ async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
     return cafe
 
 
-async def user_can_manage_cafe(user: User, cafe_id: int, session) -> None:
+async def user_can_manage_cafe(
+        user: User, cafe_id: int, session: AsyncSession,
+    ) -> None:
     """Проверяет, что текущий пользователь может управлять данным кафе."""
     cafe = await cafe_exists(cafe_id, session)
     if user.role == int(UserRole.ADMIN):

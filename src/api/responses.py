@@ -67,6 +67,21 @@ VALIDATION_ERROR_RESPONSE = {
     },
 }
 
+BAD_RESPONSE = {
+    400: {
+        'description': 'Ошибка в параметрах запроса',
+        'content': {
+            'application/json': {
+                'schema': ErrorResponse.model_json_schema(),
+                'example': {
+                    'code': 'BAD_REQUEST',
+                    'message': 'Ошибка в параметрах запроса',
+                },
+            },
+        },
+    },
+}
+
 
 # --- Специфичные ошибки для Кафе ---
 
