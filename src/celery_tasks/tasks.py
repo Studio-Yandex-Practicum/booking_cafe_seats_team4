@@ -182,7 +182,7 @@ def send_booking_notification(
                 send_email_task.delay(
                     manager.email,
                     'Новое бронирование',
-                    body=email_body
+                    email_body
                 )
         return 'Сообщение направлено менеджерам и пользователю'
     finally:
