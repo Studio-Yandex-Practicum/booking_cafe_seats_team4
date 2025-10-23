@@ -8,7 +8,7 @@ from models.cafe import Cafe
 from models.user import User
 from schemas.cafe import CafeCreate, CafeUpdate
 
-from .base import CRUDBase
+from .base import CRUDBase, audit_event
 
 
 class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
@@ -68,6 +68,9 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
         session.add(db_cafe)
         await session.commit()
         await session.refresh(db_cafe)
+
+        audit_event('cafe', 'created', id=db_cafe.id)
+
         return db_cafe
 
     async def update(
@@ -106,6 +109,9 @@ class CRUDCafe(CRUDBase[Cafe, CafeCreate, CafeUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('cafe', 'updated', id=db_obj.id)
+
         return db_obj
 
 

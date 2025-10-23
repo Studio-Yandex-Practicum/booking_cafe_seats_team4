@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import err
-from api.validators.cafe import get_cafe_or_404, check_cafe_permissions
+from api.validators.cafe import check_cafe_permissions, get_cafe_or_404
 from crud.cafe import cafe_crud
 from models.user import User
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
@@ -82,8 +82,11 @@ class CafeService:
             potential_managers = result.scalars().all()
 
             if len(potential_managers) != len(cafe_in.managers_id):
-                raise err('INVALID_MANAGER_ID',
-                          'Один или несколько ID менеджеров не найдены', 400)
+                raise err(
+                    'INVALID_MANAGER_ID',
+                    'Один или несколько ID менеджеров не найдены',
+                    400,
+                )
 
             for user_to_appoint in potential_managers:
                 if int(user_to_appoint.role) < UserRole.MANAGER:

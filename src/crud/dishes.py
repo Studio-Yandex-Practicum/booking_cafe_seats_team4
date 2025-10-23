@@ -8,17 +8,17 @@ from crud.base import CreateSchemaType, UpdateSchemaType
 from models.cafe import Cafe
 from models.dish import Dish
 
-from .base import CRUDBase
+from .base import CRUDBase, audit_event
 
 
 class CRUDDish(CRUDBase):
     """CRUD операции для взаимодействия с таблицей dishes."""
 
     async def get_dishes(
-            self,
-            session: AsyncSession,
-            cafe_id: Optional[int],
-            only_active: Optional[bool] = True,
+        self,
+        session: AsyncSession,
+        cafe_id: Optional[int],
+        only_active: Optional[bool] = True,
     ) -> List[Dish]:
         """Возвращает список блюд.
 
@@ -33,16 +33,20 @@ class CRUDDish(CRUDBase):
         return list(result.scalars().all())
 
     async def create_dish(
-            self,
-            session: AsyncSession,
-            obj_in: CreateSchemaType,
-            cafes: List[Cafe],
+        self,
+        session: AsyncSession,
+        obj_in: CreateSchemaType,
+        cafes: List[Cafe],
     ) -> Dish:
         """Создаёт новый объект в таблице Dish."""
         obj_in_data = obj_in.model_dump(exclude={'cafes_id'})
         db_obj = self.model(**obj_in_data, cafe_id=cafes)
         session.add(db_obj)
         await session.commit()
+        await session.refresh(db_obj)
+
+        audit_event('dish', 'created', id=db_obj.id, name=db_obj.name)
+
         return db_obj
 
     async def update_dish(
@@ -63,6 +67,9 @@ class CRUDDish(CRUDBase):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('dish', 'updated', id=db_obj.id)
+
         return db_obj
 
 

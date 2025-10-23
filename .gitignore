@@ -176,3 +176,9 @@ __pycache__/
 /infra/pgdata/*
 /infra/pgdata/*
 !/infra/pgdata/.gitkeep
+
+
+# Logs
+app.log
+app.log.*
+logs/

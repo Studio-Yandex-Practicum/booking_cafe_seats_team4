@@ -1,13 +1,15 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import Response
 
 from api import api_router
+from api.deps import inject_user_into_state
 from api.exceptions import install as install_exception_handlers
 from core.config import settings
 from core.logging import get_logger, setup_logging
+from middleware.request_logging import RequestLoggingMiddleware
 
 
 @asynccontextmanager
@@ -27,8 +29,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         log.info('service shutdown')
 
 
-app = FastAPI(title='Booking Cafe API', lifespan=lifespan)
+app = FastAPI(
+    title='Booking Cafe API',
+    lifespan=lifespan,
+    dependencies=[Depends(inject_user_into_state)],
+)
 """Основное приложение FastAPI."""
+
+app.add_middleware(RequestLoggingMiddleware)
 
 install_exception_handlers(app)
 
