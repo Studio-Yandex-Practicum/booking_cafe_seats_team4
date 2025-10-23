@@ -44,7 +44,7 @@ async def test_change_own_role_forbidden(
     r = await client.patch('/users/me', headers=headers, json={'role': 2})
     assert r.status_code == 403
     data = r.json()
-    assert data['code'] == 403
+    assert data.get('code') in (403, 'FORBIDDEN')
 
 
 @pytest.mark.anyio

@@ -50,7 +50,7 @@ class Settings:
     SMTP_PORT: int = int(os.getenv('SMTP_PORT', '587'))
     SMTP_USERNAME: str = os.getenv(
         'SMTP_USERNAME',
-        'python-plus-53-54-cafe@yandex.ru'
+        'python-plus-53-54-cafe@yandex.ru',
     )
     SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', 'jlezoiiqptbwgmae')
 

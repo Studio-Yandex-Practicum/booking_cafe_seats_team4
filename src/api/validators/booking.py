@@ -29,15 +29,16 @@ async def check_all_objects_id(
     session: AsyncSession,
 ) -> None:
     """Проверяет существование кафе, слотов и столов по их ID.
+
     Затем валидирует отсутствие конфликтующих бронирований.
     """
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None:
         raise not_found(f'Нет кафе с ID: {cafe_id}')
-    for id in slots_id:
-        slot = await session.get(Slot, id)
+    for slot_id in slots_id:
+        slot = await session.get(Slot, slot_id)
         if slot is None:
-            raise not_found(f'Нет временного слота с ID: {id}')
+            raise not_found(f'Нет временного слота с ID: {slot_id}')
 
     for table_id in tables_id:
         table = await session.get(Table, table_id)
@@ -80,12 +81,12 @@ async def check_booking_conflicts(
                     conflicting_tables.add(table.id)
         err_msg = []
         if conflicting_slots:
-            err_msg.append(f"Слоты уже заняты: {sorted(conflicting_slots)}")
+            err_msg.append(f'Слоты уже заняты: {sorted(conflicting_slots)}')
         if conflicting_tables:
-            err_msg.append(f"Столы уже заняты: {sorted(conflicting_tables)}")
+            err_msg.append(f'Столы уже заняты: {sorted(conflicting_tables)}')
 
         raise bad_request(
-            "Найдены конфликтующие бронирования. " + "; ".join(err_msg),
+            'Найдены конфликтующие бронирования. ' + '; '.join(err_msg),
         )
 
 
@@ -98,16 +99,14 @@ async def check_booking_date(booking_date: date) -> None:
 
 
 async def ban_change_status(
-        booking: Booking,
-        obj_in: BookingCreate,
+    booking: Booking,
+    obj_in: BookingCreate,
 ) -> None:
-    """Проверяет, что изменить прошедшее и активное бронирование по полю status
-    нельзя.
-    """
+    """Изменить прошедшее и активное бронирование по полю status нельзя."""
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, _ in update_data.items():
         if field == 'status' and (
-            booking.is_active == True or booking.booking_date < date.today()
+            booking.is_active or booking.booking_date < date.today()
         ):
             raise bad_request(
                 'Нельзя изменить прошедшее и активное бронирование!',
@@ -122,7 +121,11 @@ async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
     return cafe
 
 
-async def user_can_manage_cafe(user: User, cafe_id: int, session) -> None:
+async def user_can_manage_cafe(
+    user: User,
+    cafe_id: int,
+    session: AsyncSession,
+) -> None:
     """Проверяет, что текущий пользователь может управлять данным кафе."""
     cafe = await cafe_exists(cafe_id, session)
     if user.role == int(UserRole.ADMIN):

@@ -1,8 +1,5 @@
-# api/docs/responses.py (ИСПРАВЛЕННАЯ ВЕРСИЯ)
-
 from schemas.common import ErrorResponse
 
-# --- Общие ошибки ---
 SUCCESSFUL_RESPONSE = {
     200: {'description': 'Успешно'},
 }
@@ -67,8 +64,6 @@ VALIDATION_ERROR_RESPONSE = {
     },
 }
 
-
-# --- Специфичные ошибки для Кафе ---
 
 CAFE_DUPLICATE_RESPONSE = {
     400: {

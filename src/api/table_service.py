@@ -2,9 +2,8 @@ from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.validators.cafe import check_cafe_permissions
 from api.exceptions import err
-from api.validators.cafe import get_cafe_or_404
+from api.validators.cafe import check_cafe_permissions, get_cafe_or_404
 from api.validators.table import get_table_in_cafe_or_404
 from crud.table import table_crud
 from models.user import User

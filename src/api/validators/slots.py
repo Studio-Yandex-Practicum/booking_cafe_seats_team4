@@ -48,10 +48,9 @@ async def validate_no_time_overlap(
     exclude_id: int | None = None,
 ) -> None:
     """Проверяет, что новый слот не пересекается по времени с существующими."""
-    new_start = getattr(payload, "start_time", None)
-    new_end = getattr(payload, "end_time", None)
+    new_start = getattr(payload, 'start_time', None)
+    new_end = getattr(payload, 'end_time', None)
 
-    # пропускаем проверку, если нет start/end
     if new_start is None or new_end is None:
         return
 

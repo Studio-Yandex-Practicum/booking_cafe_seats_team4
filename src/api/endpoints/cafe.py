@@ -46,6 +46,7 @@ async def get_all_cafes(
     ] = False,
 ) -> List[CafeInfo]:
     """Получение списка кафе.
+
     Для администраторов и менеджеров - все кафе
     (с возможностью выбора), для пользователей - только активные.
     """
@@ -136,8 +137,12 @@ async def update_cafe(
     _: Annotated[User, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
+
     Только для администраторов и менеджеров.
     """
     return await CafeService.update_cafe(
-        session, cafe_id, cafe_in, current_user=current_user,
+        session,
+        cafe_id,
+        cafe_in,
+        current_user=current_user,
     )

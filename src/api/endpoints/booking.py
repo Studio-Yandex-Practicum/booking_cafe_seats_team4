@@ -20,9 +20,11 @@ from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
 
-@router.get('/', response_model=List[BookingInfo],
-            summary='Список бронирований',
-            )
+@router.get(
+    '/',
+    response_model=List[BookingInfo],
+    summary='Список бронирований',
+)
 async def get_list_booking(
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
@@ -52,8 +54,7 @@ async def get_list_booking(
     )
 
 
-@router.post('/', response_model=BookingInfo,
-             summary='Создание бронирования')
+@router.post('/', response_model=BookingInfo, summary='Создание бронирования')
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
@@ -70,13 +71,14 @@ async def create_booking(
         booking.tables_id,
         session,
     )
-    booking = await booking_crud.create_booking(booking, user.id, session)
-    return booking
+    return await booking_crud.create_booking(booking, user.id, session)
 
 
-@router.get('/{booking_id}', response_model=BookingInfo,
-            summary='Информация о бронировании по ID',
-            )
+@router.get(
+    '/{booking_id}',
+    response_model=BookingInfo,
+    summary='Информация о бронировании по ID',
+)
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
@@ -96,9 +98,11 @@ async def get_booking(
     return await booking_exists(booking_id, session)
 
 
-@router.patch('/{booking_id}', response_model=BookingInfo,
-              summary='Обновление бронирования по ID',
-              )
+@router.patch(
+    '/{booking_id}',
+    response_model=BookingInfo,
+    summary='Обновление бронирования по ID',
+)
 async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,

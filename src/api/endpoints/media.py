@@ -9,7 +9,7 @@ from api.validators.media import (
     check_len_file,
     media_allowed_content_type,
 )
-from celery_tasks.tasks import save_image, get_image_task
+from celery_tasks.tasks import get_image_task, save_image
 from core.config import settings
 from schemas.media import MediaUploadResponse
 
@@ -22,11 +22,10 @@ MEDIA_PATH = Path(settings.MEDIA_PATH)
     '',
     response_model=MediaUploadResponse,
     summary='Загрузка изображения',
-    dependencies=[Depends(require_manager_or_admin)]
+    dependencies=[Depends(require_manager_or_admin)],
 )
 async def upload_image(file: UploadFile = File(...)) -> MediaUploadResponse:
     """Эндпоинт загрузки изображений."""
-
     file = media_allowed_content_type(file)
     contents = await check_len_file(file)
     media_id = str(uuid.uuid4())
@@ -45,7 +44,6 @@ async def upload_image(file: UploadFile = File(...)) -> MediaUploadResponse:
 @router.get('/{media_id}', summary='Получение изображения по ID')
 async def get_image(media_id: str) -> FileResponse:
     """Получение изображения по ID."""
-
     file_path = get_image_task(media_id)
     return FileResponse(
         path=file_path,

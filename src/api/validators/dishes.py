@@ -20,8 +20,8 @@ async def check_name_unique(session: AsyncSession, obj_name: str) -> None:
 
 
 async def check_cafe_exists(
-        session: AsyncSession,
-        cafe_id: List[int],
+    session: AsyncSession,
+    cafe_id: List[int],
 ) -> List[Cafe]:
     """Проверить существование кафе по id."""
     query = select(Cafe).where(Cafe.id.in_(cafe_id))

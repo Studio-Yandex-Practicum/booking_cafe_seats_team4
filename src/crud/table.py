@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from models.table import Table
 from schemas.table import TableCreate, TableUpdate
 
-from .base import CRUDBase
+from .base import CRUDBase, audit_event
 
 
 class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
@@ -32,6 +32,9 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('table', 'created', id=db_obj.id, cafe_id=db_obj.cafe_id)
+
         return db_obj
 
     async def get_multi(
@@ -79,6 +82,8 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('table', 'updated', id=db_obj.id)
 
         return db_obj
 

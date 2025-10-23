@@ -3,12 +3,13 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud.base import CRUDBase
 from models.booking import Booking
 from models.slots import Slot
 from models.table import Table
 from models.user import User
 from schemas.booking import BookingCreate, BookingUpdate
+
+from .base import CRUDBase, audit_event
 
 
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
@@ -69,6 +70,17 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event(
+            'booking',
+            'created',
+            id=(
+                getattr(db_obj, 'id', None)
+                or getattr(db_obj, 'booking_id', None)
+            ),
+            user_id=getattr(db_obj, 'user_id', None),
+        )
+
         return db_obj
 
 
