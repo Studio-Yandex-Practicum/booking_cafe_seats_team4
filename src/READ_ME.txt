@@ -77,6 +77,8 @@ project/
       │   ├─ celery_app.py           — конфигурация Celery
       │   └─ tasks.py                — save_image, send_mass_mail
       └─ tests/
+          ├─ test_cafes.py           — проверка кафе
+          ├─ test_tables.py          — проверка столов
           ├─ test_auth.py            — проверка логина (422 на неверные креды)
           └─ test_users.py           — создание пользователя, дубликаты и пр.
 
@@ -103,6 +105,7 @@ project/
 5) Применить миграции:
    cd ../src
    alembic upgrade head
+   (опционально запустить python -m services.db_seed для наполнения базы тестовыми данными юзеров, кафе и столов)
 
 6) Запустить приложение:
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
