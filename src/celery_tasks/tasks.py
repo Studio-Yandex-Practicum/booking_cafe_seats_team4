@@ -138,6 +138,7 @@ def send_booking_notification(
                 x.start_time, '%H:%M'
             ))
         email_body = BOOKING_CONFIRMATION_TEMPLATE.format(
+            username='ddd',
             booking_date=booking.booking_date,
             cafe=cafe.name,
             first_slot=earliest_slot.start_time,

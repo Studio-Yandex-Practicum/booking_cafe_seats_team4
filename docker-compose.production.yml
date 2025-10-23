@@ -41,8 +41,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=sup_password_123
+    - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER} 
+    - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
   web:
     image: mikhail1589/src-web:latest 
     env_file:

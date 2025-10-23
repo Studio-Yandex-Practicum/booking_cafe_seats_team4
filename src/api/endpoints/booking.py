@@ -157,4 +157,6 @@ async def update_booking(
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)
     await ban_change_status(booking, obj_in)
-    return await booking_crud.update(booking, obj_in, session)
+    update_booking = booking_crud.update(booking, obj_in, session)
+    send_booking_notification.delay(update_booking.id)
+    return update_booking
