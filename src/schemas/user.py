@@ -13,7 +13,6 @@ from pydantic import (
 
 from core.constants import EMAIL_MAX, PHONE_MAX, TG_ID_MAX, USERNAME_MAX
 
-# Ограничения для строковых полей (Pydantic v2)
 UsernameStr = Annotated[
     str,
     StringConstraints(strip_whitespace=True, max_length=USERNAME_MAX),

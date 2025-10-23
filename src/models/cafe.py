@@ -21,18 +21,18 @@ class Cafe(BaseModel):
         'Table',
         back_populates='cafe',
         cascade='all, delete-orphan',
-        lazy='selectin',
+        lazy='noload',
     )
     slots = relationship(
         'Slot',
         back_populates='cafe',
         cascade='all, delete-orphan',
-        lazy='selectin',
+        lazy='noload',
     )
     bookings = relationship(
         'Booking',
         back_populates='cafe',
-        lazy='selectin',
+        lazy='noload',
     )
     managers = relationship(
         'User',
@@ -43,12 +43,12 @@ class Cafe(BaseModel):
     dishes = relationship(
         'Dish',
         secondary=cafe_dishes,
-        back_populates='cafes',
-        lazy='selectin',
+        back_populates='cafe_id',
+        lazy='noload',
     )
     actions = relationship(
         'Action',
         secondary=cafe_actions,
         back_populates='cafes',
-        lazy='selectin',
+        lazy='noload',
     )

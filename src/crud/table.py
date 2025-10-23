@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from models.table import Table
 from schemas.table import TableCreate, TableUpdate
 
-from .base import CRUDBase
+from .base import CRUDBase, audit_event
 
 
 class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
@@ -32,6 +32,9 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('table', 'created', id=db_obj.id, cafe_id=db_obj.cafe_id)
+
         return db_obj
 
     async def get_multi(
@@ -62,6 +65,27 @@ class CRUDTable(CRUDBase[Table, TableCreate, TableUpdate]):
         )
         result = await session.execute(query)
         return result.scalars().first()
+
+    async def update(
+        self,
+        db_obj: Table,
+        obj_in: TableUpdate,
+        session: AsyncSession,
+    ) -> Table:
+        """Обновляет стол с контролируемой загрузкой relationships."""
+        update_data = obj_in.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            if hasattr(db_obj, field):
+                setattr(db_obj, field, value)
+
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+
+        audit_event('table', 'updated', id=db_obj.id)
+
+        return db_obj
 
 
 table_crud = CRUDTable(Table)

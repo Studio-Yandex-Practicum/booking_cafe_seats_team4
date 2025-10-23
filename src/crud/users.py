@@ -9,6 +9,8 @@ from models.user import User
 from schemas.user import UserCreate, UserUpdate
 from services.users import apply_user_update
 
+from .base import audit_event
+
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     """CRUD для пользователей с логикой пароля и флагов."""
@@ -43,6 +45,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('user', 'created', id=db_obj.id, role=db_obj.role)
+
         return db_obj
 
     async def update_with_logic(
@@ -56,6 +61,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('user', 'updated', id=db_obj.id)
+
         return db_obj
 
 

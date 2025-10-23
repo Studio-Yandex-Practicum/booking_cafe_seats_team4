@@ -1,9 +1,10 @@
 from typing import List
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import err
-from api.validators.cafe import get_cafe_or_404
+from api.validators.cafe import check_cafe_permissions, get_cafe_or_404
 from crud.cafe import cafe_crud
 from models.user import User
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
@@ -56,6 +57,7 @@ class CafeService:
     async def create_cafe(
         session: AsyncSession,
         cafe_in: CafeCreate,
+        current_user: User,
     ) -> CafeInfo:
         """Создаёт новое кафе.
 
@@ -74,6 +76,37 @@ class CafeService:
                 400,
             )
 
+        if cafe_in.managers_id:
+            query = select(User).where(User.id.in_(cafe_in.managers_id))
+            result = await session.execute(query)
+            potential_managers = result.scalars().all()
+
+            if len(potential_managers) != len(cafe_in.managers_id):
+                raise err(
+                    'INVALID_MANAGER_ID',
+                    'Один или несколько ID менеджеров не найдены',
+                    400,
+                )
+
+            for user_to_appoint in potential_managers:
+                if int(user_to_appoint.role) < UserRole.MANAGER:
+                    raise err(
+                        'INVALID_ROLE',
+                        'Простой пользователь '
+                        'не может быть назначен менеджером кафе.',
+                        400,
+                    )
+                if (
+                    int(current_user.role) == UserRole.MANAGER
+                    and int(user_to_appoint.role) == UserRole.ADMIN
+                ):
+                    raise err(
+                        'FORBIDDEN',
+                        'Менеджер не может назначать администратора '
+                        'менеджером кафе.',
+                        403,
+                    )
+
         try:
             new_cafe_db = await cafe_crud.create(
                 obj_in=cafe_in,
@@ -89,10 +122,11 @@ class CafeService:
         session: AsyncSession,
         cafe_id: int,
         cafe_in: CafeUpdate,
+        current_user: User,
     ) -> CafeInfo:
         """Обновляет кафе и возвращает его обновлённое представление."""
         db_cafe = await get_cafe_or_404(cafe_id, session)
-
+        check_cafe_permissions(db_cafe, current_user)
         updated_cafe_db = await cafe_crud.update(
             db_obj=db_cafe,
             obj_in=cafe_in,

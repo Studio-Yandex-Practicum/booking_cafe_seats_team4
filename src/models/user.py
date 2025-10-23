@@ -41,7 +41,6 @@ class User(BaseModel):
     role = Column(Integer, nullable=False, default=int(UserRole.USER))
     password_hash = Column(String(PASSWORD_HASH_MAX), nullable=False)
 
-    # many-to-many с кафе
     managed_cafes = relationship(
         'Cafe',
         secondary=cafe_managers,
@@ -49,7 +48,6 @@ class User(BaseModel):
         lazy='selectin',
     )
 
-    # связь с Booking
     bookings = relationship(
         'Booking',
         back_populates='user',

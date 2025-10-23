@@ -69,7 +69,7 @@ class CafeCreate(BaseModel):
                 'phone': '+7(812)555-35-35',
                 'description': 'Лучший кофе и свежая выпечка в центре города.',
                 'photo_id': '123e4567-e89b-12d3-a456-426614174000',
-                'managers_id': [10, 15],
+                'managers_id': [1],
             },
         },
     )

@@ -29,6 +29,7 @@ async def check_all_objects_id(
     session: AsyncSession,
 ) -> None:
     """Проверяет существование кафе, слотов и столов по их ID.
+
     Затем валидирует отсутствие конфликтующих бронирований.
     """
     cafe = await session.get(Cafe, cafe_id)
@@ -80,12 +81,12 @@ async def check_booking_conflicts(
                     conflicting_tables.add(table.id)
         err_msg = []
         if conflicting_slots:
-            err_msg.append(f"Слоты уже заняты: {sorted(conflicting_slots)}")
+            err_msg.append(f'Слоты уже заняты: {sorted(conflicting_slots)}')
         if conflicting_tables:
-            err_msg.append(f"Столы уже заняты: {sorted(conflicting_tables)}")
+            err_msg.append(f'Столы уже заняты: {sorted(conflicting_tables)}')
 
         raise bad_request(
-            "Найдены конфликтующие бронирования. " + "; ".join(err_msg),
+            'Найдены конфликтующие бронирования. ' + '; '.join(err_msg),
         )
 
 
@@ -98,12 +99,10 @@ async def check_booking_date(booking_date: date) -> None:
 
 
 async def ban_change_status(
-        booking: Booking,
-        obj_in: BookingCreate,
+    booking: Booking,
+    obj_in: BookingCreate,
 ) -> None:
-    """Проверяет, что изменить прошедшее и активное бронирование по полю status
-    нельзя.
-    """
+    """Изменить прошедшее и активное бронирование по полю status нельзя."""
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, _ in update_data.items():
         if field == 'status' and (

@@ -8,7 +8,7 @@ from models.action import Action
 from models.cafe import Cafe
 from schemas.action import ActionCreate, ActionUpdate
 
-from .base import CRUDBase
+from .base import CRUDBase, audit_event
 
 
 class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
@@ -20,7 +20,7 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         session: AsyncSession,
         show_all: bool = False,
     ) -> Action | None:
-        """Получение акций с загрузкой связанных кафк."""
+        """Получить акцию с загрузкой связанных кафе."""
         result = (
             select(self.model)
             .options(selectinload(self.model.cafes))
@@ -37,7 +37,7 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         show_all: bool = False,
         cafe_id: Optional[int] = None,
     ) -> List[Action]:
-        """Получение всех акций с фильтрацией по активности и кафе"""
+        """Получить все акции с фильтрацией по активности и кафе."""
         result = select(self.model).options(selectinload(self.model.cafes))
         if not show_all:
             result = result.where(self.model.is_active.is_(True))
@@ -47,9 +47,10 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         return result.scalars().all()
 
     async def create(
-            self,
-            obj_in: ActionCreate,
-            session: AsyncSession) -> Action:
+        self,
+        obj_in: ActionCreate,
+        session: AsyncSession,
+    ) -> Action:
         """Создание акции с обработкой связи many-to-many c кафе."""
         obj_in_data = obj_in.model_dump(exclude={'cafes_id'})
         db_action = self.model(**obj_in_data)
@@ -64,6 +65,9 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         session.add(db_action)
         await session.commit()
         await session.refresh(db_action)
+
+        audit_event('action', 'created', id=db_action.id)
+
         return db_action
 
     async def update(
@@ -74,9 +78,7 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
     ) -> Action:
         """Обновление акции и связи с кафе."""
         update_data = obj_in.model_dump(exclude_unset=True)
-        simple_data = {
-            k: v for k, v in update_data.items() if k != 'cafes_id'
-        }
+        simple_data = {k: v for k, v in update_data.items() if k != 'cafes_id'}
         for field, value in simple_data.items():
             if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
@@ -100,6 +102,9 @@ class CRUDActions(CRUDBase[Action, ActionCreate, ActionUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('action', 'updated', id=db_obj.id)
+
         return db_obj
 
 

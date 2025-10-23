@@ -25,7 +25,6 @@ class TableCreate(BaseModel):
 class TableUpdate(BaseModel):
     """Схема обновления Стола."""
 
-    cafe_id: Optional[int] = None
     description: Optional[TableDescriptionStr] = None
     seat_number: Optional[PositiveInt] = None
     is_active: Optional[bool] = None

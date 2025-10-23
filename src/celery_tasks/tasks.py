@@ -1,6 +1,8 @@
 import io
-import logging
 import smtplib
+from email.header import Header
+from email.mime.text import MIMEText
+from email.utils import formatdate
 from pathlib import Path
 
 from PIL import Image
@@ -10,8 +12,6 @@ from sqlalchemy.orm import sessionmaker
 from celery_tasks.celery_app import celery_app
 from core.config import settings
 from models.user import User
-
-logger = logging.getLogger(__name__)
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
 MEDIA_PATH.mkdir(parents=True, exist_ok=True)
@@ -23,11 +23,7 @@ SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 @celery_app.task(name='save_image')
 def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
-    """Сохранить картинку как JPEG `<media_id>.jpg`.
-
-    Возвращает словарь с ключом ``media_id``; при ошибке
-    дополнительно возвращает ключ ``error`` с текстом ошибки.
-    """
+    """Сохранить картинку как JPEG `<media_id>.jpg`."""
     try:
         image = Image.open(io.BytesIO(image_data))
         if image.mode != 'RGB':
@@ -40,45 +36,63 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
         return {'media_id': media_id, 'error': str(e)}
 
 
-@celery_app.task(name='send_email_task')
-def send_email_task(recipient: str, subject: str, body: str) -> str:
-    """Отправить одно письмо пользователю."""
+@celery_app.task(name='get_image_task')
+def get_image_task(media_id: str) -> str:
+    """Celery задача для получения изображения по ID."""
+    from api.validators.media import check_media_id, media_exist
+
+    media_id = check_media_id(media_id)
+    filename = f'{media_id}.jpg'
+    # RET504: возвращаем результат напрямую без промежуточного присваивания
+    return media_exist(MEDIA_PATH / filename)
+
+
+def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
+    """Общая функция для отправки email через SMTP."""
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        message = f'Subject: {subject}\n\n{body}'
-        server.sendmail(SMTP_USERNAME, recipient, message)
+        message = MIMEText(body, 'plain', 'utf-8')
+        message['Subject'] = Header(subject, 'utf-8')
+        message['From'] = SMTP_USERNAME
+        message['To'] = recipient
+        message['Date'] = formatdate(localtime=True)
+        server.sendmail(SMTP_USERNAME, recipient, message.as_string())
         server.quit()
-    except Exception as e:  # noqa: BLE001
-        return str(e)
-    return f'Email sent to {recipient}'
+        return True
+    except Exception:
+        return False
+
+
+@celery_app.task(name='send_email_task')
+def send_email_task(recipient: str, subject: str, body: str) -> str:
+    """Отправить одно письмо пользователю или менеджеру."""
+    success = send_email_smtp(recipient, subject, body)
+    if success:
+        return f'Cообщение отправлено {recipient}'
+    return f'Ошибка отправки сообщения для {recipient}'
 
 
 @celery_app.task(name='send_mass_mail')
-def send_mass_mail(body: str) -> str:
+def send_mass_mail(body: str, subject: str = 'Новая акция!') -> str:
     """Разослать письмо всем активным пользователям."""
     sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
     engine = create_engine(sync_database_url)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    recipients = session.execute(select(User).where(User.is_active))
-    recipients = recipients.scalars().all()
-    logger.info(f'GGG {len(recipients)}')
-    if not recipients:
+    # N806: переменные в функции — строчными
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        recipients = session.execute(select(User).where(User.is_active))
+        recipients = recipients.scalars().all()
+        if not recipients:
+            return 'Нет активных пользователей'
+        successful_sends = 0
+        for recipient in recipients:
+            success = send_email_smtp(recipient.email, body, subject)
+            if success:
+                successful_sends += 1
+        return f'Сообщение отправлено {successful_sends} пользователям'
+    finally:
         session.close()
         engine.dispose()
-        return 'Нет активных пользователей'
-    for recipient in recipients:
-        try:
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-            server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            subject = 'Новая акция!'
-            message = f'Subject: {subject}\n\n{body}'
-            message = message.encode('utf-8')
-            server.sendmail(SMTP_USERNAME, recipient.email, message)
-            server.quit()
-        except Exception as e:  # noqa: BLE001
-            print(str(e))
-    return 'Email sent to all users'
