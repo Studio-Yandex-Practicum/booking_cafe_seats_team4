@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:17
     env_file:
       - ./.env
     environment:
@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data/
-      
+
     command: >
       postgres -c max_connections=1000
                -c shared_buffers=256MB
