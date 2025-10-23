@@ -42,6 +42,9 @@ class CRUDDish(CRUDBase[Dish, DishCreate, DishUpdate]):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
+
+        audit_event('dish', 'updated', id=db_obj.id)
+
         return db_obj
 
 

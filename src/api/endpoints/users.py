@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,16 +44,14 @@ async def create_user(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserInfo:
     """Создаёт нового пользователя (через CRUD)."""
-    # Просим хотя бы один контакт (email или phone)
     ensure_contact_present_on_create(payload)
 
-    # Создание; при дубле email/phone отдаём 400 CustomError
     try:
         return await user_crud.create_with_hash(payload, session)
     except IntegrityError:
         await session.rollback()
         raise err(
-            'USER_DUPLICATE',
+            400,
             'Пользователь с таким email или телефоном уже существует',
             400,
         )
@@ -71,11 +70,16 @@ async def patch_me(
     payload: UserUpdate,
     current: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> UserInfo:
+) -> UserInfo | JSONResponse:
     """Позволяет частично изменить свои данные."""
-    # Запрещаем менять собственную роль
     if payload.role is not None:
-        raise err('FORBIDDEN', 'Запрещено изменять собственную роль', 403)
+        return JSONResponse(
+            status_code=403,
+            content={
+                'code': 403,
+                'message': 'Запрещено изменять собственную роль',
+            },
+        )
     return await user_crud.update_with_logic(current, payload, session)
 
 
@@ -113,7 +117,7 @@ async def patch_user_by_id(
     effective = payload.model_dump(exclude_unset=True, exclude_none=True)
     if not effective:
         raise err(
-            'EMPTY_PATCH',
+            422,
             'Нет данных для изменения',
             status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
@@ -124,32 +128,29 @@ async def patch_user_by_id(
             new_role = UserRole(effective['role'])
         except ValueError:
             raise err(
-                'ROLE_UNKNOWN',
+                422,
                 'Неизвестная роль',
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
-    # Ограничения для менеджера
     if int(current.role) == int(UserRole.MANAGER):
         if current.id == target.id and new_role is not None:
             raise err(
-                'SELF_ROLE_FORBIDDEN',
+                403,
                 'Менеджеру нельзя менять свою роль',
                 status.HTTP_403_FORBIDDEN,
             )
 
-        # Менеджеру нельзя менять роль у существующего админа
         if int(target.role) == int(UserRole.ADMIN) and new_role is not None:
             raise err(
-                'ADMIN_EDIT_FORBIDDEN',
+                403,
                 'Менеджеру нельзя изменять роль администратора',
                 status.HTTP_403_FORBIDDEN,
             )
 
-        # Менеджеру нельзя назначать ADMIN
         if new_role is not None and int(new_role) == int(UserRole.ADMIN):
             raise err(
-                'ROLE_FORBIDDEN',
+                403,
                 'Менеджеру нельзя назначать роль ADMIN',
                 status.HTTP_403_FORBIDDEN,
             )

@@ -54,58 +54,119 @@ def unprocessable(message: str) -> HTTPException:
     return err(422, message, 422)
 
 
-def install(app: FastAPI) -> None:
-    """Зарегистрировать глобальные обработчики на приложении."""
+def _attach_req_id(request: Request, response: JSONResponse) -> JSONResponse:
+    """Добавляет X-Request-ID из request.state к ответу (если есть)."""
+    rid = getattr(request.state, 'request_id', None)
+    if rid:
+        response.headers['X-Request-ID'] = rid
+    return response
 
-    @app.exception_handler(StarletteHTTPException)
-    async def http_exc(
-        _: Request,
-        exc: StarletteHTTPException,
-    ) -> JSONResponse:
-        if (
-            isinstance(exc.detail, dict)
-            and 'code' in exc.detail
-            and 'message' in exc.detail
-        ):
-            return JSONResponse(
-                status_code=exc.status_code,
-                content=exc.detail,
-            )
 
-        message = DEFAULT_MESSAGES.get(exc.status_code, 'Ошибка')
-        if isinstance(exc.detail, str):
-            message = exc.detail
+def _format_json_response(
+    request: Request,
+    status_code: int,
+    detail: object,
+) -> JSONResponse:
+    """Формирует JSON-ответ по тем же правилам, что и раньше."""
+    if isinstance(detail, dict) and 'code' in detail and 'message' in detail:
+        content = detail
+    else:
+        if isinstance(detail, str):
+            message = detail
+        else:
+            message = DEFAULT_MESSAGES.get(int(status_code), 'Ошибка')
+        content = {'code': int(status_code), 'message': message}
+    return _attach_req_id(
+        request,
+        JSONResponse(status_code=status_code, content=content),
+    )
 
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={'code': int(exc.status_code), 'message': message},
-        )
 
-    @app.exception_handler(RequestValidationError)
-    async def pydantic_exc(
-        _: Request,
-        __: RequestValidationError,
-    ) -> JSONResponse:
-        return JSONResponse(
+async def http_exc_handler(
+    request: Request,
+    exc: StarletteHTTPException,
+) -> JSONResponse:
+    """Обработать StarletteHTTPException и вернуть унифицированный JSON."""
+    return _format_json_response(request, int(exc.status_code), exc.detail)
+
+
+async def http_exc_fastapi_handler(
+    request: Request,
+    exc: HTTPException,
+) -> JSONResponse:
+    """Обработать fastapi.HTTPException и вернуть унифицированный JSON."""
+    return _format_json_response(request, int(exc.status_code), exc.detail)
+
+
+async def pydantic_exc_handler(
+    request: Request,
+    __: RequestValidationError,
+) -> JSONResponse:
+    """Вернуть 422 для ошибок валидации с фиксированным сообщением."""
+    return _attach_req_id(
+        request,
+        JSONResponse(
             status_code=422,
             content={'code': 422, 'message': 'Неверные данные запроса'},
-        )
+        ),
+    )
 
-    @app.exception_handler(IntegrityError)
-    async def integrity_exc(
-        _: Request,
-        exc: IntegrityError,
-    ) -> JSONResponse:
-        txt = str(exc).lower()
-        if ('unique' in txt) or ('duplicate' in txt):
-            return JSONResponse(
+
+async def integrity_exc_handler(
+    request: Request,
+    exc: IntegrityError,
+) -> JSONResponse:
+    """Преобразует IntegrityError в 400; для unique/duplicate."""
+    txt = str(exc).lower()
+    if ('unique' in txt) or ('duplicate' in txt):
+        return _attach_req_id(
+            request,
+            JSONResponse(
                 status_code=400,
                 content={'code': 400, 'message': DUPLICATE_MSG},
-            )
-        return JSONResponse(
+            ),
+        )
+    return _attach_req_id(
+        request,
+        JSONResponse(
             status_code=400,
             content={
                 'code': 400,
                 'message': 'Нарушение ограничений базы данных',
             },
-        )
+        ),
+    )
+
+
+async def unhandled_exc_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    """Перехватить прочие исключения и вернуть статус/JSON в едином формате."""
+    status_code = getattr(exc, 'status_code', 500)
+    detail = getattr(exc, 'detail', None)
+    return _format_json_response(request, int(status_code), detail)
+
+
+def install(app: FastAPI) -> None:
+    """Зарегистрировать глобальные обработчики на приложении."""
+    app.add_exception_handler(
+        StarletteHTTPException,
+        http_exc_handler,
+    )
+    app.add_exception_handler(
+        HTTPException,
+        http_exc_fastapi_handler,
+    )
+    app.add_exception_handler(
+        RequestValidationError,
+        pydantic_exc_handler,
+    )
+    app.add_exception_handler(
+        IntegrityError,
+        integrity_exc_handler,
+    )
+    app.add_exception_handler(
+        Exception,
+        unhandled_exc_handler,
+    )

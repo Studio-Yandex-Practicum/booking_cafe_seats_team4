@@ -14,7 +14,6 @@ from core.constants import DESCRIPTION_MAX, DESCRIPTION_MIN, TIME_LENGTH
 
 from .validators import validate_time_format, validate_time_range
 
-# Ограничения для строковых полей
 DescriptionStr = Annotated[
     str,
     StringConstraints(
@@ -30,7 +29,7 @@ TimeStr = Annotated[
         strip_whitespace=True,
         min_length=TIME_LENGTH,
         max_length=TIME_LENGTH,
-        pattern=r'^\d{2}:\d{2}$',  # строгий формат HH:MM
+        pattern=r'^\d{2}:\d{2}$',
     ),
 ]
 

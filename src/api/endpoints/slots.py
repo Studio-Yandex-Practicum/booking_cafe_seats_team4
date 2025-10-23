@@ -47,6 +47,12 @@ async def list_slots(
     session: Annotated[AsyncSession, Depends(get_session)],
     show_all: bool = False,
 ) -> List[TimeSlotInfo]:
+    """Вернуть список слотов кафе.
+
+    По умолчанию возвращаются только активные слоты. Если указать
+    `show_all=true` и у пользователя роль менеджера или администратора,
+    вернутся все слоты, включая неактивные.
+    """
     cafe = await cafe_exists(cafe_id, session)
 
     only_active = True
@@ -76,7 +82,6 @@ async def create_slot(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
     """Создание временного слота."""
-    # проверка обязательных полей
     if not payload.start_time or not payload.end_time:
         raise bad_request('start_time и end_time обязательны для слота')
 
@@ -99,6 +104,10 @@ async def get_slot(
     slot_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
+    """Вернуть активный слот по ID.
+
+    Если слот не найден или деактивирован, будет ошибка 404.
+    """
     slot = await slot_exists(slot_id, session)
     slot_active(slot)
     return slot
@@ -122,16 +131,23 @@ async def update_slot(
     current_user: Annotated[User, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TimeSlotInfo:
+    """Обновить параметры слота или деактивировать его.
+
+    Менять может админ или менеджер, управляющий этим кафе. При изменении
+    времени оба поля `start_time` и `end_time` обязательны. Проверяется
+    пересечение времени с другими слотами.
+    """
     slot = await slot_exists(slot_id, session)
     slot_active(slot)
     cafe = await cafe_exists(slot.cafe_id, session)
     user_can_manage_cafe(current_user, cafe)
 
-    # проверка на частичное обновление времени
-    if (payload.start_time is not None or payload.end_time is not None) and \
-       (payload.start_time is None or payload.end_time is None):
+    if (payload.start_time is not None or payload.end_time is not None) and (
+        payload.start_time is None or payload.end_time is None
+    ):
         raise bad_request(
-            'Для обновления времени оба поля start_time и end_time обязательны',
+            'Для обновления времени оба поля start_time и '
+            'end_time обязательны',
         )
 
     if payload.start_time and payload.end_time:

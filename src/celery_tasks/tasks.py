@@ -1,18 +1,17 @@
 import io
 import smtplib
+from email.header import Header
+from email.mime.text import MIMEText
+from email.utils import formatdate
 from pathlib import Path
 
 from PIL import Image
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
-from email.mime.text import MIMEText
-from email.utils import formatdate
-from email.header import Header
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
 from models.user import User
-
 
 MEDIA_PATH = Path(settings.MEDIA_PATH)
 MEDIA_PATH.mkdir(parents=True, exist_ok=True)
@@ -25,7 +24,6 @@ SMTP_PASSWORD = settings.SMTP_PASSWORD
 @celery_app.task(name='save_image')
 def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
     """Сохранить картинку как JPEG `<media_id>.jpg`."""
-
     try:
         image = Image.open(io.BytesIO(image_data))
         if image.mode != 'RGB':
@@ -41,17 +39,16 @@ def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
 @celery_app.task(name='get_image_task')
 def get_image_task(media_id: str) -> str:
     """Celery задача для получения изображения по ID."""
-    from api.validators.media import media_exist, check_media_id
+    from api.validators.media import check_media_id, media_exist
+
     media_id = check_media_id(media_id)
     filename = f'{media_id}.jpg'
-    file_path = MEDIA_PATH / filename
-    file_path = media_exist(file_path)
-    return file_path
+    # RET504: возвращаем результат напрямую без промежуточного присваивания
+    return media_exist(MEDIA_PATH / filename)
 
 
 def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
     """Общая функция для отправки email через SMTP."""
-
     try:
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
@@ -71,12 +68,10 @@ def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
 @celery_app.task(name='send_email_task')
 def send_email_task(recipient: str, subject: str, body: str) -> str:
     """Отправить одно письмо пользователю или менеджеру."""
-
     success = send_email_smtp(recipient, subject, body)
     if success:
         return f'Cообщение отправлено {recipient}'
-    else:
-        return f'Ошибка отправки сообщения для {recipient}'
+    return f'Ошибка отправки сообщения для {recipient}'
 
 
 @celery_app.task(name='send_mass_mail')
@@ -84,8 +79,9 @@ def send_mass_mail(body: str, subject: str = 'Новая акция!') -> str:
     """Разослать письмо всем активным пользователям."""
     sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
     engine = create_engine(sync_database_url)
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    # N806: переменные в функции — строчными
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
     try:
         recipients = session.execute(select(User).where(User.is_active))
         recipients = recipients.scalars().all()
