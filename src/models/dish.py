@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Float, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -15,7 +15,7 @@ class Dish(BaseModel):
     name = Column(String(NAME_MAX), nullable=False)
     description = Column(Text, nullable=True)
     photo_id = Column(UUID(as_uuid=True), nullable=False)
-    price = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
 
     cafes = relationship(
         "Cafe",

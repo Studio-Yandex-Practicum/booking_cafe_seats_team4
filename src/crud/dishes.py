@@ -1,29 +1,22 @@
 from typing import List, Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.validators.dishes import check_cafe_exists
-from crud.base import CreateSchemaType, UpdateSchemaType
-from models.cafe import Cafe
 from models.dish import Dish
+from models.cafe import Cafe
+from schemas.dish import DishCreate, DishUpdate
+from crud.base import CRUDBase
 
-from .base import CRUDBase
 
-
-class CRUDDish(CRUDBase):
-    """CRUD операции для взаимодействия с таблицей dishes."""
+class CRUDDish(CRUDBase[Dish, DishCreate, DishUpdate]):
+    """CRUD для блюд."""
 
     async def get_dishes(
-            self,
-            session: AsyncSession,
-            cafe_id: Optional[int],
-            only_active: Optional[bool] = True,
+        self,
+        session: AsyncSession,
+        cafe_id: Optional[int] = None,
+        only_active: bool = True,
     ) -> List[Dish]:
-        """Возвращает список блюд.
-
-        Все или для указанного cafe_id, с фильтром по is_active.
-        """
+        """Возвращает список блюд (все или по cafe_id, с фильтром по is_active)."""
         stmt = select(self.model)
         if only_active:
             stmt = stmt.where(self.model.is_active.is_(True))
@@ -32,34 +25,20 @@ class CRUDDish(CRUDBase):
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_dish(
-            self,
-            session: AsyncSession,
-            obj_in: CreateSchemaType,
-            cafes: List[Cafe],
-    ) -> Dish:
-        """Создаёт новый объект в таблице Dish."""
-        obj_in_data = obj_in.model_dump(exclude={'cafes_id'})
-        db_obj = self.model(**obj_in_data, cafe_id=cafes)
-        session.add(db_obj)
-        await session.commit()
-        return db_obj
-
-    async def update_dish(
+    async def create(
         self,
+        obj_in: DishCreate,
         session: AsyncSession,
-        db_obj: Dish,
-        obj_in: UpdateSchemaType,
     ) -> Dish:
-        """Частичное обновление объекта Dish."""
-        update_data = obj_in.model_dump(exclude_unset=True)
-        if update_data['cafes_id'] and update_data['cafes_id'] is not None:
-            cafes = await check_cafe_exists(session, update_data['cafes_id'])
-            db_obj.cafe_id = cafes
-            del update_data['cafes_id']
-        for field, value in update_data.items():
-            if hasattr(db_obj, field):
-                setattr(db_obj, field, value)
+        """Создание блюда с привязкой к кафе."""
+        obj_in_data = obj_in.model_dump(exclude_unset=True)
+        cafe_ids = obj_in_data.pop("cafes_id", [])
+        cafes = []
+        if cafe_ids:
+            cafes_query = await session.execute(select(Cafe).where(Cafe.id.in_(cafe_ids)))
+            cafes = list(cafes_query.scalars().all())
+
+        db_obj = self.model(**obj_in_data, cafes=cafes)
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
