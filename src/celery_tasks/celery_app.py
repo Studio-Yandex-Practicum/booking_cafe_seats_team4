@@ -9,7 +9,6 @@ celery_app = Celery(
     'media_processor',
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=['celery_tasks.tasks'],
 )
 celery_app.conf.update(
     task_serializer='json',
