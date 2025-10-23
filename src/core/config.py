@@ -58,6 +58,10 @@ class Settings:
     LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
     LOG_FILE: str | None = os.getenv('LOG_FILE')
 
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_CACHE_TTL: int = 300
+
 
 settings = Settings()
 """Экземпляр настроек для использования в проекте."""
