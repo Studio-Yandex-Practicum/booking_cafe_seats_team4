@@ -41,8 +41,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=sup_password_123
   web:
     image: mikhail1589/src-web:latest 
     env_file:
@@ -50,7 +50,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
       db:
@@ -74,7 +74,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
       db:
@@ -93,7 +93,7 @@ services:
     env_file:
       - ./.env
     environment:
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       FLOWER_BASIC_AUTH: ${FLOWER_USER}:${FLOWER_PASSWORD}
     depends_on:
