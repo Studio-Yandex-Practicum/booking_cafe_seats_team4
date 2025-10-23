@@ -108,7 +108,11 @@ services:
       - celery-worker 
     volumes:
       - ./media:/app/media
-    command: celery -A celery_tasks.celery_app flower --port=5555 --basic_auth=admin:password123
+    command: >
+      celery -A celery_tasks.celery_app flower 
+      --port=5555 
+      --basic_auth=admin:password123
+      --url_prefix=/flowerth=admin:password123
     restart: unless-stopped
 
 volumes:
