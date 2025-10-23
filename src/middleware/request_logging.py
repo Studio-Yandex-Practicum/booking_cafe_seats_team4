@@ -5,6 +5,7 @@ import time
 import uuid
 from typing import Callable, Optional
 
+from sqlalchemy.orm.exc import DetachedInstanceError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -85,4 +86,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             or getattr(request.state, 'current_user', None)
             or getattr(request.state, 'actor', None)
         )
-        return get_user_logger('api', user) if user else self._base_logger
+        if not user:
+            return self._base_logger
+        try:
+            return get_user_logger('api', user)
+        except DetachedInstanceError:
+            return self._base_logger
+        except Exception:
+            return self._base_logger
