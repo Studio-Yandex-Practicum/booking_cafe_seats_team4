@@ -44,7 +44,7 @@ async def upload_image(file: UploadFile = File(...)) -> MediaUploadResponse:
 @router.get('/{media_id}', summary='Получение изображения по ID')
 async def get_image(media_id: str) -> FileResponse:
     """Получение изображения по ID."""
-    file_path = get_image_task(media_id)
+    file_path = get_image_task.delay(media_id)
     return FileResponse(
         path=file_path,
         media_type='image/jpeg',

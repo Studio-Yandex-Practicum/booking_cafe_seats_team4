@@ -109,7 +109,7 @@ def send_mass_mail(body: str, subject: str = 'Новая акция') -> str:
             return 'Нет активных пользователей'
         successful_sends = 0
         for recipient in recipients:
-            success = send_email_smtp(recipient.email, body, subject)
+            success = send_email_smtp(recipient.email, subject, body)
             if success:
                 successful_sends += 1
         return f'Сообщение отправлено {successful_sends} пользователям'
