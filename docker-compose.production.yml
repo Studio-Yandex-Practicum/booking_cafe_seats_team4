@@ -105,6 +105,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       FLOWER_USER: ${FLOWER_USER}
       FLOWER_PASSWORD: ${FLOWER_PASSWORD}
+      
     depends_on:
       - redis
       - rabbitmq
