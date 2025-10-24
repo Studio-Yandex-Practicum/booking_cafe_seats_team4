@@ -1,6 +1,8 @@
-from typing import Annotated, List
+from typing import Annotated, List, Annotated
 
+import redis
 from fastapi import APIRouter, Depends, Path, Query, status
+# from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.cafe_service import CafeService
@@ -10,6 +12,7 @@ from api.responses import (CAFE_DUPLICATE_RESPONSE, FORBIDDEN_RESPONSE,
                            NOT_FOUND_RESPONSE, SUCCESSFUL_RESPONSE,
                            UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
 from core.db import get_session
+from core.redis import get_redis, redis_cache
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
 from schemas.user import UserInfo
 
@@ -27,6 +30,7 @@ router = APIRouter(prefix='/cafes', tags=['Кафе'])
     },
 )
 async def get_all_cafes(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[UserInfo, Depends(get_current_user)],
     show_all: Annotated[
@@ -44,11 +48,17 @@ async def get_all_cafes(
     Для администраторов и менеджеров - все кафе
     (с возможностью выбора), для пользователей - только активные.
     """
-    return await CafeService.get_all_cafes(
+
+    cache_key = f"booking:{current_user.role}"
+    cached_cafe = await redis_cache.get_cached_data(cache_key)
+    if cached_cafe:
+        return [CafeInfo(**cafe) for cafe in cached_cafe]
+    cafes = await CafeService.get_all_cafes(
         session,
         current_user,
         show_all,
     )
+    return cafes
 
 
 @router.post(
