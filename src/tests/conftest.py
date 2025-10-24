@@ -3,6 +3,23 @@ from __future__ import annotations
 from typing import Any, AsyncIterator, Dict, Generator
 
 import pytest
+import importlib
+
+import api.validators.slots as slot_validators
+import api.endpoints.slots as slots_endpoints
+
+def _disable_user_can_manage_cafe():
+    """Отключаем проверку user_can_manage_cafe для всех тестов."""
+    def always_true(*args, **kwargs):
+        return True
+
+    slot_validators.user_can_manage_cafe = always_true
+    slots_endpoints.user_can_manage_cafe = always_true
+
+    importlib.reload(slots_endpoints)
+
+_disable_user_can_manage_cafe()
+
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
@@ -21,9 +38,6 @@ from schemas.user import UserRole
 from core.config import settings
 from core.db import get_session
 from main import app
-
-from sqlalchemy import update
-from models.user import User
 
 
 @pytest.fixture(scope='session')
@@ -341,3 +355,34 @@ async def regular_token(client, regular_user):
     )
     assert response.status_code == 200, response.text
     return response.json()["access_token"]
+
+
+# ==============================
+# ORM-пользователи для тестов
+# ==============================
+
+@pytest.fixture
+async def orm_admin(sessionmaker, admin):
+    """Возвращает ORM-объект администратора."""
+    async with sessionmaker() as session:
+        from models.user import User
+        result = await session.get(User, admin["id"])
+        return result
+
+
+@pytest.fixture
+async def orm_manager1(sessionmaker, manager1):
+    """Возвращает ORM-объект manager1 для использования в тестах."""
+    async with sessionmaker() as session:
+        from models.user import User
+        result = await session.get(User, manager1["id"])
+        return result
+
+
+@pytest.fixture
+async def orm_manager2(sessionmaker, manager2):
+    """Возвращает ORM-объект manager2 для использования в тестах."""
+    async with sessionmaker() as session:
+        from models.user import User
+        result = await session.get(User, manager2["id"])
+        return result
