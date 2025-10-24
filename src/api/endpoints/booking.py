@@ -23,6 +23,7 @@ from core.db import get_session
 from crud.booking import booking_crud
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
+from celery_tasks.tasks import send_booking_notification
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
@@ -86,7 +87,9 @@ async def create_booking(
         booking.booking_date,
         session,
     )
-    return await booking_crud.create_booking(booking, user.id, session)
+    new_booking = await booking_crud.create_booking(booking, user.id, session)
+    send_booking_notification.delay(new_booking.id)
+    return new_booking
 
 
 @router.get('/{booking_id}', response_model=BookingInfo,
@@ -156,4 +159,6 @@ async def update_booking(
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)
     await ban_change_status(booking, obj_in)
-    return await booking_crud.update(booking, obj_in, session)
+    update_booking = booking_crud.update(booking, obj_in, session)
+    send_booking_notification.delay(update_booking.id)
+    return update_booking

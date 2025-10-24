@@ -3,7 +3,7 @@ name: Main Booking_Cafe_Seats workflow
 on:
   push:
     branches:
-      - feature/redis
+      - develop
 
 jobs:
   
@@ -25,11 +25,13 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./src/
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/src-web:latest
       - name: Build and push gateway image
         uses: docker/build-push-action@v4
         with:
           context: ./src/nginx/ 
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/src-gateway:latest
 
   deploy:

@@ -89,7 +89,7 @@ async def create_action(
     email_body = ACTION_TEMPLATE.format(
         action_description=action_in.description,
     )
-    send_mass_mail.delay(body=email_body)
+    send_mass_mail.delay(email_body)
     await redis_cache.delete_pattern("actions:*")
     return action
 
