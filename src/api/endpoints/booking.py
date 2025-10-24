@@ -84,6 +84,7 @@ async def create_booking(
         booking.cafe_id,
         booking.slots_id,
         booking.tables_id,
+        booking.booking_date,
         session,
     )
     new_booking = await booking_crud.create_booking(booking, user.id, session)
@@ -153,6 +154,7 @@ async def update_booking(
         booking.cafe_id,
         slots_id,
         tables_id,
+        booking.booking_date,
         session,
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)

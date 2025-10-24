@@ -2,6 +2,8 @@ from typing import Iterable
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import load_only
 
 from api.deps import get_current_user
 from api.exceptions import bad_request, err, forbidden, not_found
@@ -9,10 +11,22 @@ from core.security import hash_password
 from models.user import User
 from schemas.user import UserCreate, UserRole, UserUpdate
 
+USER_FIELDS_TO_LOAD = [
+    User.id, User.username, User.email, User.phone, User.tg_id,
+    User.role, User.is_active, User.created_at, User.updated_at,
+]
+
 
 async def get_user_or_404(user_id: int, session: AsyncSession) -> User:
     """Вернуть пользователя по id или 404 Not Found."""
-    user = await session.get(User, user_id)
+    query = (
+        select(User)
+        .where(User.id == user_id)
+        .options(load_only(*USER_FIELDS_TO_LOAD))
+    )
+    result = await session.execute(query)
+    user = result.scalars().first()
+
     if user is None:
         raise not_found('Пользователь не найден')
     return user
