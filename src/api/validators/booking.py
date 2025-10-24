@@ -52,6 +52,7 @@ async def check_booking_conflicts(
     cafe_id: int,
     slots_id: list[int],
     tables_id: list[int],
+    booking_date: date,
     session: AsyncSession,
 ) -> None:
     """Проверяет наличие конфликтующих бронирований."""
@@ -62,6 +63,7 @@ async def check_booking_conflicts(
         .where(
             Booking.cafe_id == cafe_id,
             Booking.status == BookingStatus.ACTIVE.value,
+            Booking.booking_date == booking_gate,
             Slot.id.in_(slots_id),
             Table.id.in_(tables_id),
         )
