@@ -3,7 +3,7 @@ name: Main Booking_Cafe_Seats workflow
 on:
   push:
     branches:
-      - feature/Fix_CD
+      - develop
 
 jobs:
   
