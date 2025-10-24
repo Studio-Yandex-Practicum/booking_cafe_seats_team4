@@ -14,6 +14,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import Session as ORMSession
+from sqlalchemy import update
+from models.user import User
+from schemas.user import UserRole
 
 from core.config import settings
 from core.db import get_session
@@ -162,6 +165,81 @@ async def _get_token(client: AsyncClient, login: str, password: str) -> str:
 async def token_email(client: AsyncClient, user_email: Dict) -> str:
     """Фикстура: токен пользователя с email."""
     return await _get_token(client, 'u@u.com', 'qwe123')
+
+
+@pytest.fixture
+async def admin(
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+) -> Dict:
+    """Фикстура: пользователь с правами ADMIN."""
+    user_data = await _create_user(
+        client, username='admin', email='admin@a.com'
+    )
+    async with sessionmaker() as session:
+        stmt = (
+            update(User)
+            .where(User.id == user_data['id'])
+            .values(role=UserRole.ADMIN)
+        )
+        await session.execute(stmt)
+        await session.commit()
+    return user_data
+
+
+@pytest.fixture
+async def manager1(
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+) -> Dict:
+    """Фикстура: первый пользователь с правами MANAGER."""
+    user_data = await _create_user(
+        client, username='manager1', email='m1@m.com'
+    )
+    async with sessionmaker() as session:
+        stmt = (
+            update(User)
+            .where(User.id == user_data['id'])
+            .values(role=UserRole.MANAGER)
+        )
+        await session.execute(stmt)
+        await session.commit()
+    return user_data
+
+
+@pytest.fixture
+async def manager2(
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+) -> Dict:
+    """Фикстура: второй пользователь с правами MANAGER."""
+    user_data = await _create_user(
+        client, username='manager2', email='m2@m.com'
+    )
+    async with sessionmaker() as session:
+        stmt = (
+            update(User)
+            .where(User.id == user_data['id'])
+            .values(role=UserRole.MANAGER)
+        )
+        await session.execute(stmt)
+        await session.commit()
+    return user_data
+
+
+@pytest.fixture
+async def admin_token(client: AsyncClient, admin: Dict) -> str:
+    """Фикстура: токен пользователя ADMIN."""
+    return await _get_token(client, 'admin@a.com', 'qwe123')
+
+
+@pytest.fixture
+async def manager1_token(client: AsyncClient, manager1: Dict) -> str:
+    """Фикстура: токен первого пользователя MANAGER."""
+    return await _get_token(client, 'm1@m.com', 'qwe123')
+
+
+@pytest.fixture
+async def manager2_token(client: AsyncClient, manager2: Dict) -> str:
+    """Фикстура: токен второго пользователя MANAGER."""
+    return await _get_token(client, 'm2@m.com', 'qwe123')
 
 
 # ==============================

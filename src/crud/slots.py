@@ -22,5 +22,20 @@ class CRUDSlot(CRUDBase[Slot, TimeSlotCreate, TimeSlotUpdate]):
         res = await session.execute(stmt)
         return list(res.scalars().all())
 
+    async def create_with_cafe_id(
+        self,
+        obj_in: TimeSlotCreate,
+        session: AsyncSession,
+        cafe_id: int,
+    ) -> Slot:
+        """Создать слот с cafe_id из пути."""
+        obj_in_data = obj_in.model_dump()
+        obj_in_data['cafe_id'] = cafe_id
+        db_obj = self.model(**obj_in_data)
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+        return db_obj
+
 
 slot_crud = CRUDSlot(Slot)

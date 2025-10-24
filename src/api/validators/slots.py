@@ -3,7 +3,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import bad_request, forbidden, not_found
+from api.exceptions import err
 from models.cafe import Cafe
 from models.slots import Slot
 from models.user import User
@@ -14,7 +14,7 @@ async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
     """Проверяет, что кафе существует и активно."""
     cafe = await session.get(Cafe, cafe_id)
     if cafe is None or not cafe.is_active:
-        raise not_found('Такого кафе нет или оно не активно.')
+        raise err('NOT_FOUND', 'Такого кафе нет или оно не активно.', 404)
     return cafe
 
 
@@ -22,7 +22,7 @@ async def slot_exists(slot_id: int, session: AsyncSession) -> Slot:
     """Проверяет, что слот существует."""
     slot = await session.get(Slot, slot_id)
     if slot is None:
-        raise not_found('Слот не найден.')
+        raise err('NOT_FOUND', 'Слот не найден.', 404)
     return slot
 
 
@@ -33,18 +33,19 @@ def user_can_manage_cafe(user: User, cafe: Cafe) -> None:
     if user.role == int(UserRole.MANAGER):
         if cafe in user.managed_cafes:
             return
-    raise forbidden('У вас нет прав доступа.')
+    raise err('FORBIDDEN', 'У вас нет прав доступа.', 403)
 
 
 def slot_active(slot: Slot) -> None:
     """Запрещает операции над неактивным слотом."""
     if not slot.is_active:
-        raise forbidden('Слот не активен.')
+        raise err('FORBIDDEN', 'Слот не активен.', 403)
 
 
 async def validate_no_time_overlap(
     payload: Any,
     session: AsyncSession,
+    cafe_id: int,
     exclude_id: int | None = None,
 ) -> None:
     """Проверяет, что новый слот не пересекается по времени с существующими."""
@@ -54,7 +55,7 @@ async def validate_no_time_overlap(
     if new_start is None or new_end is None:
         return
 
-    stmt = select(Slot).where(Slot.cafe_id == payload.cafe_id)
+    stmt = select(Slot).where(Slot.cafe_id == cafe_id)
     if exclude_id:
         stmt = stmt.where(Slot.id != exclude_id)
     res = await session.execute(stmt)
@@ -64,4 +65,8 @@ async def validate_no_time_overlap(
         if slot.is_active and not (
             new_end <= slot.start_time or new_start >= slot.end_time
         ):
-            raise bad_request('Слот пересекается с другим по времени.')
+            raise err(
+                'BAD_REQUEST',
+                'Слот пересекается с другим по времени.',
+                400
+            )

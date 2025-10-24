@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exceptions import bad_request, forbidden, not_found
+from api.exceptions import bad_request, forbidden, not_found, unprocessable
 from models.booking import Booking, BookingStatus
 from models.cafe import Cafe
 from models.slots import Slot
@@ -26,6 +26,7 @@ async def check_all_objects_id(
     cafe_id: int,
     slots_id: List[int],
     tables_id: List[int],
+    booking_date: date,
     session: AsyncSession,
 ) -> None:
     """Проверяет существование кафе, слотов и столов по их ID.
@@ -45,13 +46,15 @@ async def check_all_objects_id(
         if table is None:
             raise not_found(f'Нет стола с ID: {table_id}')
 
-    await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+    await check_booking_conflicts(
+        cafe_id, slots_id, tables_id, booking_date, session)
 
 
 async def check_booking_conflicts(
     cafe_id: int,
     slots_id: list[int],
     tables_id: list[int],
+    booking_date: date,
     session: AsyncSession,
 ) -> None:
     """Проверяет наличие конфликтующих бронирований."""
@@ -62,6 +65,7 @@ async def check_booking_conflicts(
         .where(
             Booking.cafe_id == cafe_id,
             Booking.status == BookingStatus.ACTIVE.value,
+            Booking.booking_date == booking_date,
             Slot.id.in_(slots_id),
             Table.id.in_(tables_id),
         )
@@ -93,7 +97,7 @@ async def check_booking_conflicts(
 async def check_booking_date(booking_date: date) -> None:
     """Проверяет, что дата бронирования не в прошлом."""
     if booking_date < date.today():
-        raise bad_request(
+        raise unprocessable(
             'Нельзя назначить бронь на прошедшую дату!',
         )
 
@@ -106,7 +110,7 @@ async def ban_change_status(
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, _ in update_data.items():
         if field == 'status' and (
-            booking.is_active or booking.booking_date < date.today()
+            booking.is_active is True or booking.booking_date < date.today()
         ):
             raise bad_request(
                 'Нельзя изменить прошедшее и активное бронирование!',
@@ -122,10 +126,8 @@ async def cafe_exists(cafe_id: int, session: AsyncSession) -> Cafe:
 
 
 async def user_can_manage_cafe(
-    user: User,
-    cafe_id: int,
-    session: AsyncSession,
-) -> None:
+        user: User, cafe_id: int, session: AsyncSession,
+    ) -> None:
     """Проверяет, что текущий пользователь может управлять данным кафе."""
     cafe = await cafe_exists(cafe_id, session)
     if user.role == int(UserRole.ADMIN):

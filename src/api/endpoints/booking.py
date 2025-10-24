@@ -1,5 +1,12 @@
 from typing import List, Optional
 
+from api.responses import (
+    BAD_RESPONSE,
+    FORBIDDEN_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    UNAUTHORIZED_RESPONSE,
+    VALIDATION_ERROR_RESPONSE,
+)
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,11 +27,12 @@ from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
 
-@router.get(
-    '/',
-    response_model=List[BookingInfo],
-    summary='Список бронирований',
-)
+@router.get('/', response_model=List[BookingInfo],
+            summary='Список бронирований',
+            responses={
+                **UNAUTHORIZED_RESPONSE,
+                **VALIDATION_ERROR_RESPONSE},
+            )
 async def get_list_booking(
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
@@ -54,7 +62,13 @@ async def get_list_booking(
     )
 
 
-@router.post('/', response_model=BookingInfo, summary='Создание бронирования')
+@router.post('/', response_model=BookingInfo,
+             summary='Создание бронирования',
+             responses={
+                 **UNAUTHORIZED_RESPONSE,
+                 **VALIDATION_ERROR_RESPONSE,
+                 **BAD_RESPONSE},
+             )
 async def create_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
@@ -69,16 +83,21 @@ async def create_booking(
         booking.cafe_id,
         booking.slots_id,
         booking.tables_id,
+        booking.booking_date,
         session,
     )
     return await booking_crud.create_booking(booking, user.id, session)
 
 
-@router.get(
-    '/{booking_id}',
-    response_model=BookingInfo,
-    summary='Информация о бронировании по ID',
-)
+@router.get('/{booking_id}', response_model=BookingInfo,
+            summary='Информация о бронировании по ID',
+            responses={
+                **UNAUTHORIZED_RESPONSE,
+                **VALIDATION_ERROR_RESPONSE,
+                **FORBIDDEN_RESPONSE,
+                **BAD_RESPONSE,
+                **NOT_FOUND_RESPONSE},
+            )
 async def get_booking(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
@@ -98,11 +117,15 @@ async def get_booking(
     return await booking_exists(booking_id, session)
 
 
-@router.patch(
-    '/{booking_id}',
-    response_model=BookingInfo,
-    summary='Обновление бронирования по ID',
-)
+@router.patch('/{booking_id}', response_model=BookingInfo,
+              summary='Обновление бронирования по ID',
+              responses={
+                  **UNAUTHORIZED_RESPONSE,
+                  **VALIDATION_ERROR_RESPONSE,
+                  **FORBIDDEN_RESPONSE,
+                  **BAD_RESPONSE,
+                  **NOT_FOUND_RESPONSE},
+              )
 async def update_booking(
     booking_id: int,
     obj_in: BookingUpdate,
@@ -128,6 +151,7 @@ async def update_booking(
         booking.cafe_id,
         slots_id,
         tables_id,
+        booking.booking_date,
         session,
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)

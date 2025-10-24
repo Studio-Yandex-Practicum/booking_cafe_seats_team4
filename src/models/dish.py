@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column,
-    Integer,
+    Float,
     String,
     Text,
 )
@@ -21,8 +21,8 @@ class Dish(BaseModel):
     name = Column(String(NAME_MAX), nullable=False)
     description = Column(Text, nullable=True)
     photo_id = Column(UUID(as_uuid=True), nullable=False)
-    price = Column(Integer, nullable=False)
-    cafe_id = relationship(
+    price = Column(Float, nullable=False)
+    cafes = relationship(
         'Cafe',
         secondary=cafe_dishes,
         back_populates='dishes',

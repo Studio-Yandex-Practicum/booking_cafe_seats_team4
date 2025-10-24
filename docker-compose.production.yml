@@ -1,17 +1,17 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:17
     env_file:
       - ./.env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data/pgdata
+      - pgdata:/var/lib/postgresql/data/
+
     command: >
       postgres -c max_connections=1000
                -c shared_buffers=256MB
@@ -20,12 +20,15 @@ services:
                -c checkpoint_completion_target=0.7
                -c wal_buffers=16MB
                -c default_statistics_target=100
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+
+  nginx:
+    image: mikhail1589/src-gateway
+    ports:
+      - "8000:8000"  
+    depends_on:
+      - web
+      - flower
+      - rabbitmq
 
   redis:
     image: redis:7-alpine
@@ -41,9 +44,7 @@ services:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
   web:
-    build: .
-    ports:
-      - "8000:8000"
+    image: mikhail1589/src-web:latest 
     env_file:
       - ./.env
     environment:
@@ -53,7 +54,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_started
       rabbitmq:
@@ -67,7 +68,7 @@ services:
       "
 
   celery-worker:
-    build: .
+    image: mikhail1589/src-web:latest
     env_file:
       - ./.env
     environment:
@@ -77,20 +78,22 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_started
       rabbitmq:
         condition: service_started
     volumes:
       - ./media:/app/media
-    command: celery -A celery_tasks.celery_app worker --loglevel=info
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn main:app --host 0.0.0.0 --port 8000
+      "
     restart: unless-stopped
 
   flower:
-    build: .
-    ports:
-      - "5555:5555"
+    image: mikhail1589/src-web:latest
     env_file:
       - ./.env
     environment:
@@ -104,8 +107,10 @@ services:
       - celery-worker 
     volumes:
       - ./media:/app/media
-    command: celery -A celery_tasks.celery_app flower --port=5555 --basic_auth=admin:password123
+    command: >
+      celery -A celery_tasks.celery_app flower 
+      --port=5555 
+      --basic_auth=admin:password123
     restart: unless-stopped
-
 volumes:
   pgdata:

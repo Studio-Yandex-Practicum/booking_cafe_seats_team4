@@ -15,14 +15,14 @@ from api.responses import (
 )
 from api.table_service import TableService
 from core.db import get_session
-from models.user import User
+from schemas.user import UserInfo
 from schemas.table import TableCreate, TableInfo, TableUpdate
 
 router = APIRouter(prefix='/cafe/{cafe_id}/tables', tags=['Столы'])
 
 
 @router.get(
-    '/',
+    '',
     response_model=List[TableInfo],
     summary='Список столов в кафе',
     responses={
@@ -41,7 +41,7 @@ async def get_all_tables_in_cafe(
         ),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
     show_all: Annotated[
         bool,
         Query(
@@ -91,7 +91,7 @@ async def get_table_by_id(
         ),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
 ) -> TableInfo:
     """Получение информации о столе в кафе по его ID.
 
@@ -107,7 +107,7 @@ async def get_table_by_id(
 
 
 @router.post(
-    '/',
+    '',
     response_model=TableInfo,
     status_code=status.HTTP_200_OK,
     summary='Новый стол в кафе',
@@ -128,9 +128,9 @@ async def create_table(
         ),
     ],
     table_in: TableCreate,
-    current_user: Annotated[User, Depends(require_manager_or_admin)],
+    current_user: Annotated[UserInfo, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    _: Annotated[User, Depends(require_manager_or_admin)],
+    _: Annotated[UserInfo, Depends(require_manager_or_admin)],
 ) -> TableInfo:
     """Создание нового стола кафе. Только для администраторов и менеджеров."""
     return await TableService.create_table(
@@ -168,9 +168,9 @@ async def update_table(
         ),
     ],
     table_in: TableUpdate,
-    current_user: Annotated[User, Depends(require_manager_or_admin)],
+    current_user: Annotated[UserInfo, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    _: Annotated[User, Depends(require_manager_or_admin)],
+    _: Annotated[UserInfo, Depends(require_manager_or_admin)],
 ) -> TableInfo:
     """Обновление информации о столе в кафе по его ID.
 
