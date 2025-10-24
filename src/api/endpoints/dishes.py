@@ -1,115 +1,105 @@
 from typing import List, Optional
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
-from api.validators.users import check_user_is_manager_or_admin
+from api.validators.dishes import (
+    check_name_unique,
+    check_cafe_exists,
+    check_dish_access,
+)
 from core.db import get_session
+from core.logging import get_user_logger
 from crud.dishes import dish_crud
-from models.dish import Dish
 from models.user import User
 from schemas.dish import DishCreate, DishInfo, DishUpdate
+from api.dish_service import DishService
 
-from ..validators.dishes import (
-    check_cafe_exists,
-    check_dish,
-    check_dish_exists,
-    check_name_unique,
-)
-
-router = APIRouter(prefix='/dishes', tags=['Блюда'])
+router = APIRouter(prefix="/dishes", tags=["Блюда"])
+dish_service = DishService(crud=dish_crud)
 
 
 @router.get(
-    '',
+    "",
     response_model=List[DishInfo],
-    summary=(
-        'Получение списка блюд. Для администраторов и менеджеров - все блюда'
-        '(с возможностью выбора), для пользователей - только активные.'
-    ),
+    summary="Получение списка блюд",
+    description=(
+        "Для администраторов и менеджеров - все блюда, "
+        "для пользователей - только активные."
+    )
 )
 async def get_dishes(
-    cafe_id: Optional[int] = Query(
-        default=None,
-        description=(
-            'ID кафе, в котором показывать блюда.'
-            'Если не задано - показывает все блюда во всех кафе'
-        ),
-    ),
-    only_active: Optional[bool] = Query(
-        default=False,
-        description=(
-            'Показывать все блюда или нет. По умолчанию показывает все блюда'
-        ),
-        alias='show_all',
+    cafe_id: Optional[int] = Query(None, description="ID кафе для фильтрации"),
+    show_all: bool = Query(
+        False,
+        description="Показать все блюда (только для staff)"
     ),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
-) -> Optional[List[DishInfo]]:
+) -> List[DishInfo]:
     """Получить список блюд."""
-    if check_user_is_manager_or_admin(current_user):
-        all_dishes = await dish_crud.get_dishes(
-            session,
-            cafe_id,
-            only_active,
-        )
-    else:
-        all_dishes = await dish_crud.get_dishes(session, cafe_id)
-    return all_dishes
+    return await dish_service.get_list(
+        session=session,
+        user=current_user,
+        cafe_id=cafe_id,
+        show_all=show_all,
+    )
 
 
 @router.post(
-    '',
+    "",
     response_model=DishInfo,
-    summary='Создает новое блюда. Только для администраторов и менеджеров.',
+    summary="Создание нового блюда",
+    description="Только для администраторов и менеджеров."
 )
-async def create_dich(
+async def create_dish(
     dish_in: DishCreate,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_manager_or_admin),
-) -> Dish:
-    """Создает новое блюда. Только для администраторов и менеджеров."""
+) -> DishInfo:
+    """Создание нового блюда."""
     await check_name_unique(session, dish_in.name)
-    cafes = await check_cafe_exists(session, dish_in.cafes_id)
-    return await dish_crud.create_dish(session, dish_in, cafes)
+    await check_cafe_exists(session, dish_in.cafes_id)
+    dish = await dish_service.create(dish_in, current_user, session)
+    logger = get_user_logger(__name__, current_user)
+    logger.info(f"Блюдо создано: id={dish.id}, name='{dish.name}'")
+    return dish
 
 
 @router.get(
-    '/{dish_id}',
+    "/{dish_id}",
     response_model=DishInfo,
-    summary='Получение информации о блюде по его ID',
+    summary="Получение информации о блюде",
+    description=(
+        "Для администраторов и менеджеров - все блюда, "
+        "для пользователей - только активные."
+    )
 )
 async def get_dish(
     dish_id: int,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
-) -> Dish:
-    """Получение информации о блюде по его ID.
-
-    Для администраторов и менеджеров - все блюда,
-    для пользователей - только активные.
-    """
-    dish = await dish_crud.get(dish_id, session)
-    return check_dish(dish, current_user)
+) -> DishInfo:
+    """Получение информации о блюде по его ID."""
+    dish = await dish_service.get(dish_id, session)
+    return check_dish_access(dish, current_user)
 
 
 @router.patch(
-    '/{dish_id}',
+    "/{dish_id}",
     response_model=DishInfo,
-    summary='Обновление информации о блюде по его ID',
+    summary="Обновление информации о блюде",
+    description="Только для администраторов и менеджеров."
 )
 async def update_dish(
     dish_id: int,
     obj_in: DishUpdate,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_manager_or_admin),
-) -> Dish:
-    """Обновление информации о блюде по его ID."""
-    dish = await dish_crud.get(dish_id, session)
-    check_dish_exists(dish)
-    return await dish_crud.update_dish(
-        session,
-        dish,
-        obj_in,
-    )
+) -> DishInfo:
+    """Обновление блюда."""
+    if obj_in.name is not None:
+        await check_name_unique(session, obj_in.name)
+    if obj_in.cafes_id is not None:
+        await check_cafe_exists(session, obj_in.cafes_id)
+    return await dish_service.update(dish_id, obj_in, current_user, session)

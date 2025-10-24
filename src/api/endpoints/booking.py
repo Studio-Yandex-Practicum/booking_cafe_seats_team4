@@ -24,6 +24,7 @@ from core.db import get_session
 from crud.booking import booking_crud
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
+from celery_tasks.tasks import send_booking_notification
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 

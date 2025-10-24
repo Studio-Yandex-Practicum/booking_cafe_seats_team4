@@ -16,14 +16,14 @@ from api.responses import (
     VALIDATION_ERROR_RESPONSE,
 )
 from core.db import get_session
-from models.user import User
+from schemas.user import UserInfo
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
 
 router = APIRouter(prefix='/cafes', tags=['Кафе'])
 
 
 @router.get(
-    '/',
+    '',
     response_model=List[CafeInfo],
     summary='Получение списка кафе',
     responses={
@@ -34,7 +34,7 @@ router = APIRouter(prefix='/cafes', tags=['Кафе'])
 )
 async def get_all_cafes(
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
     show_all: Annotated[
         bool,
         Query(
@@ -58,7 +58,7 @@ async def get_all_cafes(
 
 
 @router.post(
-    '/',
+    '',
     response_model=CafeInfo,
     status_code=status.HTTP_200_OK,
     summary='Создание нового кафе',
@@ -73,9 +73,9 @@ async def get_all_cafes(
 )
 async def create_cafe(
     cafe_in: CafeCreate,
-    current_user: Annotated[User, Depends(require_manager_or_admin)],
+    current_user: Annotated[UserInfo, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    _: Annotated[User, Depends(require_manager_or_admin)],
+    _: Annotated[UserInfo, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Создает новое кафе. Только для администраторов и менеджеров."""
     return await CafeService.create_cafe(session, cafe_in, current_user)
@@ -101,7 +101,7 @@ async def get_cafe_by_id(
         ),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
 ) -> CafeInfo:
     """Получение информации о кафе по его ID.
 
@@ -132,9 +132,9 @@ async def update_cafe(
         ),
     ],
     cafe_in: CafeUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    _: Annotated[User, Depends(require_manager_or_admin)],
+    _: Annotated[UserInfo, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
 

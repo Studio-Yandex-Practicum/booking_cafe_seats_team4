@@ -43,7 +43,7 @@ class Cafe(BaseModel):
     dishes = relationship(
         'Dish',
         secondary=cafe_dishes,
-        back_populates='cafe_id',
+        back_populates='cafes',
         lazy='noload',
     )
     actions = relationship(
