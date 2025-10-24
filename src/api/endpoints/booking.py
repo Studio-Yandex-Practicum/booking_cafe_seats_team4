@@ -151,6 +151,7 @@ async def update_booking(
         booking.cafe_id,
         slots_id,
         tables_id,
+        booking.booking_date,
         session,
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)
