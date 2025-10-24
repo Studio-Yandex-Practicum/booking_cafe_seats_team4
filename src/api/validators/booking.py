@@ -65,7 +65,7 @@ async def check_booking_conflicts(
         .where(
             Booking.cafe_id == cafe_id,
             Booking.status == BookingStatus.ACTIVE.value,
-            Booking.booking_date == booking_gate,
+            Booking.booking_date == booking_date,
             Slot.id.in_(slots_id),
             Table.id.in_(tables_id),
         )
