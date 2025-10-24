@@ -26,6 +26,7 @@ async def check_all_objects_id(
     cafe_id: int,
     slots_id: List[int],
     tables_id: List[int],
+    booking_date: date,
     session: AsyncSession,
 ) -> None:
     """Проверяет существование кафе, слотов и столов по их ID.
@@ -45,13 +46,15 @@ async def check_all_objects_id(
         if table is None:
             raise not_found(f'Нет стола с ID: {table_id}')
 
-    await check_booking_conflicts(cafe_id, slots_id, tables_id, session)
+    await check_booking_conflicts(
+        cafe_id, slots_id, tables_id, booking_date, session)
 
 
 async def check_booking_conflicts(
     cafe_id: int,
     slots_id: list[int],
     tables_id: list[int],
+    booking_date: date,
     session: AsyncSession,
 ) -> None:
     """Проверяет наличие конфликтующих бронирований."""
@@ -62,6 +65,7 @@ async def check_booking_conflicts(
         .where(
             Booking.cafe_id == cafe_id,
             Booking.status == BookingStatus.ACTIVE.value,
+            Booking.booking_date == booking_gate,
             Slot.id.in_(slots_id),
             Table.id.in_(tables_id),
         )
