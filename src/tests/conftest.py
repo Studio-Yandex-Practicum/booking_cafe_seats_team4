@@ -19,6 +19,9 @@ from core.config import settings
 from core.db import get_session
 from main import app
 
+from sqlalchemy import update
+from models.user import User
+
 
 @pytest.fixture(scope='session')
 def anyio_backend() -> str:
@@ -159,3 +162,104 @@ async def _get_token(client: AsyncClient, login: str, password: str) -> str:
 async def token_email(client: AsyncClient, user_email: Dict) -> str:
     """Фикстура: токен пользователя с email."""
     return await _get_token(client, 'u@u.com', 'qwe123')
+
+
+# ==============================
+# Пользователи разных ролей
+# ==============================
+
+@pytest.fixture
+async def admin_user(sessionmaker, client):
+    """Создаёт пользователя и повышает до администратора через ORM."""
+    data = {
+        "username": "admin_user",
+        "email": "admin@mail.ru",
+        "password": "adminpass"
+    }
+    response = await client.post("/users", json=data)
+    assert response.status_code == 200, response.text
+    user = response.json()
+
+    async with sessionmaker() as session:
+        await session.execute(
+            update(User)
+            .where(User.id == user["id"])
+            .values(role=2)
+        )
+        await session.commit()
+    return user
+
+
+@pytest.fixture
+async def manager_user(sessionmaker, client):
+    """Создаёт пользователя и повышает до менеджера через ORM."""
+    data = {
+        "username": "manager_user",
+        "email": "manager@mail.ru",
+        "password": "managerpass"
+    }
+    response = await client.post("/users", json=data)
+    assert response.status_code == 200, response.text
+    user = response.json()
+
+    async with sessionmaker() as session:
+        await session.execute(
+            update(User)
+            .where(User.id == user["id"])
+            .values(role=1)
+        )
+        await session.commit()
+    return user
+
+
+@pytest.fixture
+async def regular_user(client):
+    """Создает обычного пользователя."""
+    data = {
+        "username": "regular_user",
+        "email": "user@mail.ru",
+        "password": "userpass"
+    }
+    response = await client.post("/users", json=data)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+# ==============================
+# Токены для авторизации
+# ==============================
+
+@pytest.fixture
+async def admin_token(client, admin_user):
+    """Возвращает токен администратора."""
+    response = await client.post(
+        "/auth/login",
+        data={"login": admin_user["email"], "password": "adminpass"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+async def manager_token(client, manager_user):
+    """Возвращает токен менеджера."""
+    response = await client.post(
+        "/auth/login",
+        data={"login": manager_user["email"], "password": "managerpass"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+async def regular_token(client, regular_user):
+    """Возвращает токен обычного пользователя."""
+    response = await client.post(
+        "/auth/login",
+        data={"login": regular_user["email"], "password": "userpass"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
