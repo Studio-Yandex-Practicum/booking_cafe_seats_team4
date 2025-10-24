@@ -83,6 +83,7 @@ async def create_booking(
         booking.cafe_id,
         booking.slots_id,
         booking.tables_id,
+        booking.booking_date,
         session,
     )
     return await booking_crud.create_booking(booking, user.id, session)
