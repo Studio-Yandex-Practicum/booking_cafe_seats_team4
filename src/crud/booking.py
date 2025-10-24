@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
@@ -51,6 +52,8 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         obj_in: BookingCreate,
         user_id: Optional[int] = None,
         session: AsyncSession = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
     ) -> Booking:
         """Создать бронирование с обработкой отношений."""
         slots = await session.execute(
@@ -64,6 +67,15 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         obj_in_data = obj_in.model_dump(exclude={'slots_id', 'tables_id'})
         if user_id is not None:
             obj_in_data['user_id'] = user_id
+        current_time = datetime.now()
+        if created_at is not None:
+            obj_in_data['created_at'] = created_at
+        else:
+            obj_in_data['created_at'] = current_time
+        if updated_at is not None:
+            obj_in_data['updated_at'] = updated_at
+        else:
+            obj_in_data['updated_at'] = current_time
         db_obj = self.model(**obj_in_data)
         db_obj.slots_id = slots_objs
         db_obj.tables_id = tables_objs

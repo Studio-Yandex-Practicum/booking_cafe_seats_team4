@@ -1,5 +1,10 @@
+from datetime import datetime
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.deps import get_current_user, require_manager_or_admin
 from api.responses import (
     BAD_RESPONSE,
     FORBIDDEN_RESPONSE,
@@ -7,10 +12,6 @@ from api.responses import (
     UNAUTHORIZED_RESPONSE,
     VALIDATION_ERROR_RESPONSE,
 )
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.deps import get_current_user, require_manager_or_admin
 from api.validators.booking import (
     ban_change_status,
     booking_exists,
@@ -86,7 +87,14 @@ async def create_booking(
         booking.booking_date,
         session,
     )
-    return await booking_crud.create_booking(booking, user.id, session)
+    current_time = datetime.now()
+    return await booking_crud.create_booking(
+        booking,
+        user.id,
+        session,
+        created_at=current_time,
+        updated_at=current_time,
+    )
 
 
 @router.get('/{booking_id}', response_model=BookingInfo,
@@ -143,7 +151,6 @@ async def update_booking(
             user,
             session,
         )
-
     booking = await booking_exists(booking_id, session)
     slots_id = [slot.id for slot in booking.slots_id]
     tables_id = [table.id for table in booking.tables_id]
@@ -151,8 +158,11 @@ async def update_booking(
         booking.cafe_id,
         slots_id,
         tables_id,
+        booking.booking_date,
         session,
     )
     await user_can_manage_cafe(user, booking.cafe_id, session)
     await ban_change_status(booking, obj_in)
+    obj_in = obj_in.model_dump(exclude_unset=True)
+    obj_in['updated_at'] = datetime.now()
     return await booking_crud.update(booking, obj_in, session)
