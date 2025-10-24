@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
-import asyncio
-from pathlib import Path
 from logging.config import fileConfig
+from pathlib import Path
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 # Alembic base config
 config = context.config
@@ -22,10 +23,10 @@ SRC_ROOT = CURR.parents[1]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+import models
 # Project imports
 from core.config import settings
 from models.base import Base  # noqa: E402
-import models
 
 target_metadata = Base.metadata
 

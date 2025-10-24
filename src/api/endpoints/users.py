@@ -7,11 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
 from api.exceptions import err
-from api.validators.users import (
-    ensure_contact_present_on_create,
-    ensure_user_active,
-    get_user_or_404,
-)
+from api.validators.users import (ensure_contact_present_on_create,
+                                  ensure_user_active, get_user_or_404)
 from core.db import get_session
 from crud.users import user_crud
 from models.user import User

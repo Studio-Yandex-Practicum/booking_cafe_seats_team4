@@ -1,14 +1,8 @@
 from datetime import datetime
 from typing import Annotated, Optional, Self
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    StringConstraints,
-    field_validator,
-    model_validator,
-)
+from pydantic import (BaseModel, ConfigDict, Field, StringConstraints,
+                      field_validator, model_validator)
 
 from core.constants import DESCRIPTION_MAX, DESCRIPTION_MIN, TIME_LENGTH
 

@@ -4,12 +4,7 @@ from datetime import datetime
 from typing import Annotated, List, Set
 from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    StringConstraints,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
 from core.constants import CAFE_ADDRESS_MAX, CAFE_NAME_MAX, PHONE_MAX
 from schemas.user import UserShortInfo

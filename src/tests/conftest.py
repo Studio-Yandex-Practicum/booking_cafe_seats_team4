@@ -5,22 +5,16 @@ from typing import Any, AsyncIterator, Dict, Generator
 import pytest
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import (
-    AsyncConnection,
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy import event, update
+from sqlalchemy.ext.asyncio import (AsyncConnection, AsyncEngine, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import Session as ORMSession
-from sqlalchemy import update
-from models.user import User
-from schemas.user import UserRole
 
 from core.config import settings
 from core.db import get_session
 from main import app
+from models.user import User
+from schemas.user import UserRole
 
 
 @pytest.fixture(scope='session')

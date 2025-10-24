@@ -5,19 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.cafe_service import CafeService
 from api.deps import get_current_user, require_manager_or_admin
-from api.responses import (
-    CAFE_DUPLICATE_RESPONSE,
-    FORBIDDEN_RESPONSE,
-    INVALID_ID_RESPONSE,
-    INVALID_MANAGER_ID_RESPONSE,
-    NOT_FOUND_RESPONSE,
-    SUCCESSFUL_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
+from api.responses import (CAFE_DUPLICATE_RESPONSE, FORBIDDEN_RESPONSE,
+                           INVALID_ID_RESPONSE, INVALID_MANAGER_ID_RESPONSE,
+                           NOT_FOUND_RESPONSE, SUCCESSFUL_RESPONSE,
+                           UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
 from core.db import get_session
-from schemas.user import UserInfo
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
+from schemas.user import UserInfo
 
 router = APIRouter(prefix='/cafes', tags=['Кафе'])
 

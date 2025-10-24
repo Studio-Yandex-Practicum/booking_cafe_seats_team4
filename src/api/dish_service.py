@@ -1,10 +1,11 @@
 from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import err
-from schemas.dish import DishCreate, DishUpdate
 from models.dish import Dish
 from models.user import User
+from schemas.dish import DishCreate, DishUpdate
 
 
 class DishService:

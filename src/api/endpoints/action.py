@@ -121,11 +121,15 @@ async def get_action_by_id(
     Для администраторов и менеджеров - все акции,
     для пользователей - только активные.
     """
-    
+
     cache_key = f"actions:{current_user.role}"
     cached_actions = await redis_cache.get_cached_data(cache_key)
-    
-    return await ActionService.get_action(session, action_id, current_user)
+    if cached_actions:
+        return [ActionInfo(**action) for action in cached_actions]
+    action = await ActionService.get_action(session, action_id, current_user)
+    actions_data = jsonable_encoder(action)
+    await redis_cache.set_cached_data(cache_key, actions_data, expire=600)
+    return action
 
 
 @router.patch(

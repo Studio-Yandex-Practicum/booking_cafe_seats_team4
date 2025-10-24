@@ -21,4 +21,4 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
 )
 
-import celery_tasks.tasks # noqa
+import celery_tasks.tasks  # noqa

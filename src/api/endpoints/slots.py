@@ -5,18 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user_optional, require_manager_or_admin
 from api.exceptions import err
-from api.responses import (
-    FORBIDDEN_RESPONSE,
-    NOT_FOUND_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
-from api.validators.slots import (
-    cafe_exists,
-    slot_exists,
-    user_can_manage_cafe,
-    validate_no_time_overlap,
-)
+from api.responses import (FORBIDDEN_RESPONSE, NOT_FOUND_RESPONSE,
+                           UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
+from api.validators.slots import (cafe_exists, slot_exists,
+                                  user_can_manage_cafe,
+                                  validate_no_time_overlap)
 from core.db import get_session
 from crud.slots import slot_crud
 from models.user import User
@@ -56,7 +49,8 @@ async def list_slots(
         only_active = False
 
     slots = await slot_crud.get_by_cafe(cafe.id, session, only_active)
-    return [TimeSlotInfo.model_validate(slot, from_attributes=True) for slot in slots]
+    return [TimeSlotInfo.model_validate(
+        slot, from_attributes=True) for slot in slots]
 
 
 @router.post(
@@ -108,7 +102,9 @@ async def get_time_slot_by_id(
     slot = await slot_exists(slot_id, session)
     if slot.cafe_id != cafe_id:
         raise err('NOT_FOUND', 'Слот не найден в данном кафе', 404)
-    if (not current_user or current_user.role == UserRole.USER) and not slot.is_active:
+    if (
+        not current_user or current_user.role == UserRole.USER
+    ) and not slot.is_active:
         raise err('NOT_FOUND', 'Слот не найден', 404)
     if current_user and current_user.role == UserRole.MANAGER:
         cafe = await cafe_exists(cafe_id, session)

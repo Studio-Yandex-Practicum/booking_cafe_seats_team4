@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.constants import DESCRIPTION_MIN, NAME_MAX, NAME_MIN
+
 from .cafe import CafeShortInfo
 
 

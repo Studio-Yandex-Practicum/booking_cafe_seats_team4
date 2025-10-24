@@ -2,14 +2,8 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Annotated, Optional
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    StringConstraints,
-    field_validator,
-)
+from pydantic import (BaseModel, ConfigDict, EmailStr, Field,
+                      StringConstraints, field_validator)
 
 from core.constants import EMAIL_MAX, PHONE_MAX, TG_ID_MAX, USERNAME_MAX
 
