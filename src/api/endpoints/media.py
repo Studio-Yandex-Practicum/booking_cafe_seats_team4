@@ -21,7 +21,7 @@ MEDIA_PATH = Path(settings.MEDIA_PATH)
 @router.post(
     '',
     response_model=MediaUploadResponse,
-    summary='Загрузка изображения',
+    summary='Загрузка изображений',
     dependencies=[Depends(require_manager_or_admin)],
 )
 async def upload_image(file: UploadFile = File(...)) -> MediaUploadResponse:
