@@ -30,7 +30,7 @@ router = APIRouter(prefix='/booking', tags=['Бронирования'])
                 **VALIDATION_ERROR_RESPONSE},
             )
 @cache_response(
-    cache_key_template="booking:{user.role}",
+    cache_key_template="booking:{user.role}:{show_all}",
     expire=EXPIRE_CASHE_TIME,
     response_model=BookingInfo
 )

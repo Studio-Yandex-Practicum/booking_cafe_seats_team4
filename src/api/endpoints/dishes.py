@@ -32,7 +32,7 @@ dish_service = DishService(crud=dish_crud)
     )
 )
 @cache_response(
-    cache_key_template="dishes:{current_user.role}",
+    cache_key_template="dishes:{current_user.role}:{show_all}",
     expire=EXPIRE_CASHE_TIME,
     response_model=DishInfo
 )
