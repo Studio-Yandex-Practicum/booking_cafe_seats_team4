@@ -2,7 +2,6 @@ from typing import Annotated, List, Optional
 
 import redis
 from fastapi import APIRouter, Depends
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
@@ -15,6 +14,8 @@ from api.validators.booking import (ban_change_status, booking_exists,
 from celery_tasks.tasks import send_booking_notification
 from core.db import get_session
 from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from crud.booking import booking_crud
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
@@ -28,6 +29,11 @@ router = APIRouter(prefix='/booking', tags=['Бронирования'])
                 **UNAUTHORIZED_RESPONSE,
                 **VALIDATION_ERROR_RESPONSE},
             )
+@cache_response(
+    cache_key_template="booking:{user.role}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=BookingInfo
+)
 async def get_list_booking(
     redis_client: Annotated[redis.Redis, Depends(get_redis)],
     show_all: Optional[bool] = False,
@@ -42,31 +48,21 @@ async def get_list_booking(
     фильтрации), для обычных пользователей - только свои бронирования.
     """
 
-    cache_key = f"booking:{user.role}"
-    cached_bookings = await redis_cache.get_cached_data(cache_key)
-    if cached_bookings:
-        return [BookingInfo(**booking) for booking in cached_bookings]
     if cafe_id:
         await cafe_exists(cafe_id, session)
     if not await require_manager_or_admin(user):
-        booking = await booking_crud.get_multi_booking(
+        return await booking_crud.get_multi_booking(
             session=session,
             show_all=show_all,
             cafe_id=cafe_id,
             user_id=user.id,
         )
-        booking_data = jsonable_encoder(booking)
-        await redis_cache.set_cached_data(cache_key, booking_data, expire=600)
-        return booking
-    booking = await booking_crud.get_multi_booking(
+    return await booking_crud.get_multi_booking(
         session=session,
         show_all=show_all,
         cafe_id=cafe_id,
         user_id=user_id,
     )
-    booking_data = jsonable_encoder(booking)
-    await redis_cache.set_cached_data(cache_key, booking_data, expire=600)
-    return booking
 
 
 @router.post('/', response_model=BookingInfo,

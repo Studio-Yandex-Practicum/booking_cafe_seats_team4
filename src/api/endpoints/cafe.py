@@ -2,7 +2,6 @@ from typing import Annotated, List, Annotated
 
 import redis
 from fastapi import APIRouter, Depends, Path, Query, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.cafe_service import CafeService
@@ -13,6 +12,8 @@ from api.responses import (CAFE_DUPLICATE_RESPONSE, FORBIDDEN_RESPONSE,
                            UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
 from core.db import get_session
 from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
 from schemas.user import UserInfo
 
@@ -28,6 +29,11 @@ router = APIRouter(prefix='/cafes', tags=['Кафе'])
         **VALIDATION_ERROR_RESPONSE,
         **SUCCESSFUL_RESPONSE,
     },
+)
+@cache_response(
+    cache_key_template="cafe:{user.role}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=CafeInfo
 )
 async def get_all_cafes(
     redis_client: Annotated[redis.Redis, Depends(get_redis)],
@@ -49,17 +55,11 @@ async def get_all_cafes(
     (с возможностью выбора), для пользователей - только активные.
     """
 
-    cache_key = f"cafes:{current_user.role}"
-    cached_cafe = await redis_cache.get_cached_data(cache_key)
-    if cached_cafe:
-        return [CafeInfo(**cafe) for cafe in cached_cafe]
     cafes = await CafeService.get_all_cafes(
         session,
         current_user,
         show_all,
     )
-    cafes_data = jsonable_encoder(cafes)
-    await redis_cache.set_cached_data(cache_key, cafes_data, expire=600)
     return cafes
 
 
@@ -82,6 +82,7 @@ async def create_cafe(
     current_user: Annotated[UserInfo, Depends(require_manager_or_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[UserInfo, Depends(require_manager_or_admin)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
 ) -> CafeInfo:
     """Создает новое кафе. Только для администраторов и менеджеров."""
 
@@ -102,6 +103,11 @@ async def create_cafe(
         **INVALID_ID_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="cafes:{cafe_id}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=CafeInfo
+)
 async def get_cafe_by_id(
     cafe_id: Annotated[
         int,
@@ -111,12 +117,14 @@ async def get_cafe_by_id(
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[UserInfo, Depends(get_current_user)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
 ) -> CafeInfo:
     """Получение информации о кафе по его ID.
 
     Для администраторов и менеджеров - все кафе,
     для пользователей - только активные.
     """
+
     return await CafeService.get_cafe(session, cafe_id, current_user)
 
 
@@ -144,14 +152,17 @@ async def update_cafe(
     current_user: Annotated[UserInfo, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     _: Annotated[UserInfo, Depends(require_manager_or_admin)],
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
 
     Только для администраторов и менеджеров.
     """
-    return await CafeService.update_cafe(
+    cafe = await CafeService.update_cafe(
         session,
         cafe_id,
         cafe_in,
         current_user=current_user,
     )
+    await redis_cache.delete_pattern("cafes:*")
+    return cafe

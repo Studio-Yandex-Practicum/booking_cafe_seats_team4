@@ -1,5 +1,6 @@
 from typing import Annotated, List
 
+import redis
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +11,9 @@ from api.responses import (FORBIDDEN_RESPONSE, INVALID_ID_RESPONSE,
                            UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
 from api.table_service import TableService
 from core.db import get_session
+from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from schemas.table import TableCreate, TableInfo, TableUpdate
 from schemas.user import UserInfo
 
@@ -28,7 +32,13 @@ router = APIRouter(prefix='/cafe/{cafe_id}/tables', tags=['Столы'])
         **VALIDATION_ERROR_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="tables:{user.role}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=TableInfo
+)
 async def get_all_tables_in_cafe(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[
         int,
         Path(
@@ -72,7 +82,13 @@ async def get_all_tables_in_cafe(
         **VALIDATION_ERROR_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="tables:{table_id}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=TableInfo
+)
 async def get_table_by_id(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[
         int,
         Path(
@@ -116,6 +132,7 @@ async def get_table_by_id(
     },
 )
 async def create_table(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[
         int,
         Path(
@@ -150,6 +167,7 @@ async def create_table(
     },
 )
 async def update_table(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[
         int,
         Path(
@@ -171,10 +189,13 @@ async def update_table(
 
     Только для администраторов и менеджеров.
     """
-    return await TableService.update_table(
+
+    table = await TableService.update_table(
         session=session,
         cafe_id=cafe_id,
         table_id=table_id,
         table_in=table_in,
         current_user=current_user,
     )
+    await redis_cache.delete_pattern('dishes:*')
+    return table

@@ -2,7 +2,6 @@ from typing import Annotated, List
 
 import redis
 from fastapi import APIRouter, Depends, Path, Query, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.actions_service import ActionService
@@ -14,8 +13,11 @@ from celery_tasks.tasks import send_mass_mail
 from core.db import get_session
 from core.email_templates import ACTION_TEMPLATE
 from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from models.user import User
 from schemas.action import ActionCreate, ActionInfo, ActionUpdate
+
 
 router = APIRouter(prefix='/actions', tags=['Акции'])
 
@@ -29,6 +31,11 @@ router = APIRouter(prefix='/actions', tags=['Акции'])
         **VALIDATION_ERROR_RESPONSE,
         **SUCCESSFUL_RESPONSE,
     },
+)
+@cache_response(
+    cashe_key_template="actions:{current_user.role}:{show_all}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=ActionInfo,
 )
 async def get_all_actions(
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -50,18 +57,11 @@ async def get_all_actions(
     (с возможностью выбора), для пользователей - только активные.
     """
 
-    cache_key = f"actions:{current_user.role}:{show_all}"
-    cached_actions = await redis_cache.get_cached_data(cache_key)
-    if cached_actions:
-        return [ActionInfo(**action) for action in cached_actions]
-    actions = await ActionService.get_all_actions(
+    return await ActionService.get_all_actions(
         session,
         current_user,
         show_all,
     )
-    actions_data = jsonable_encoder(actions)
-    await redis_cache.set_cached_data(cache_key, actions_data, expire=600)
-    return actions
 
 
 @router.post(
@@ -106,6 +106,11 @@ async def create_action(
         **INVALID_ID_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="actions:{action_id}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=ActionInfo,
+)
 async def get_action_by_id(
     action_id: Annotated[
         int,
@@ -122,14 +127,7 @@ async def get_action_by_id(
     для пользователей - только активные.
     """
 
-    cache_key = f"actions:{current_user.role}"
-    cached_actions = await redis_cache.get_cached_data(cache_key)
-    if cached_actions:
-        return [ActionInfo(**action) for action in cached_actions]
-    action = await ActionService.get_action(session, action_id, current_user)
-    actions_data = jsonable_encoder(action)
-    await redis_cache.set_cached_data(cache_key, actions_data, expire=600)
-    return action
+    return await ActionService.get_action(session, action_id, current_user)
 
 
 @router.patch(
