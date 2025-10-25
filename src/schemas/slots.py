@@ -4,7 +4,6 @@ from typing import Annotated, Optional, Self
 from pydantic import (
     BaseModel,
     ConfigDict,
-    Field,
     StringConstraints,
     field_validator,
     model_validator,
@@ -36,6 +35,7 @@ TimeStr = Annotated[
 
 class TimeSlotBase(BaseModel):
     """Базовая схема временного слота БЕЗ cafe_id."""
+
     start_time: TimeStr
     end_time: TimeStr
     description: DescriptionStr
@@ -53,11 +53,13 @@ class TimeSlotBase(BaseModel):
 
 class TimeSlotCreate(TimeSlotBase):
     """Схема для создания временного слота БЕЗ cafe_id."""
+
     pass
 
 
 class TimeSlotUpdate(BaseModel):
     """Схема для обновления временного слота."""
+
     start_time: Optional[TimeStr] = None
     end_time: Optional[TimeStr] = None
     description: Optional[DescriptionStr] = None
@@ -79,6 +81,7 @@ class TimeSlotUpdate(BaseModel):
 
 class TimeSlotShortInfo(BaseModel):
     """Краткая информация о временном слоте."""
+
     id: int
     start_time: str
     end_time: str
@@ -89,6 +92,7 @@ class TimeSlotShortInfo(BaseModel):
 
 class TimeSlotInfo(TimeSlotShortInfo):
     """Полная информация о временном слоте."""
+
     cafe_id: int
     is_active: bool
     created_at: datetime

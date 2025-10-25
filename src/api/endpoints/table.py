@@ -15,8 +15,8 @@ from api.responses import (
 )
 from api.table_service import TableService
 from core.db import get_session
-from schemas.user import UserInfo
 from schemas.table import TableCreate, TableInfo, TableUpdate
+from schemas.user import UserInfo
 
 router = APIRouter(prefix='/cafe/{cafe_id}/tables', tags=['Столы'])
 

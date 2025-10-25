@@ -16,8 +16,8 @@ from api.responses import (
     VALIDATION_ERROR_RESPONSE,
 )
 from core.db import get_session
-from schemas.user import UserInfo
 from schemas.cafe import CafeCreate, CafeInfo, CafeUpdate
+from schemas.user import UserInfo
 
 router = APIRouter(prefix='/cafes', tags=['Кафе'])
 

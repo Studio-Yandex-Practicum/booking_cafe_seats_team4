@@ -1,19 +1,20 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
+from api.dish_service import DishService
 from api.validators.dishes import (
-    check_name_unique,
     check_cafe_exists,
     check_dish_access,
+    check_name_unique,
 )
 from core.db import get_session
 from core.logging import get_user_logger
 from crud.dishes import dish_crud
 from models.user import User
 from schemas.dish import DishCreate, DishInfo, DishUpdate
-from api.dish_service import DishService
 
 router = APIRouter(prefix="/dishes", tags=["Блюда"])
 dish_service = DishService(crud=dish_crud)
@@ -26,13 +27,13 @@ dish_service = DishService(crud=dish_crud)
     description=(
         "Для администраторов и менеджеров - все блюда, "
         "для пользователей - только активные."
-    )
+    ),
 )
 async def get_dishes(
     cafe_id: Optional[int] = Query(None, description="ID кафе для фильтрации"),
     show_all: bool = Query(
         False,
-        description="Показать все блюда (только для staff)"
+        description="Показать все блюда (только для staff)",
     ),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -50,7 +51,7 @@ async def get_dishes(
     "",
     response_model=DishInfo,
     summary="Создание нового блюда",
-    description="Только для администраторов и менеджеров."
+    description="Только для администраторов и менеджеров.",
 )
 async def create_dish(
     dish_in: DishCreate,
@@ -73,7 +74,7 @@ async def create_dish(
     description=(
         "Для администраторов и менеджеров - все блюда, "
         "для пользователей - только активные."
-    )
+    ),
 )
 async def get_dish(
     dish_id: int,
@@ -89,7 +90,7 @@ async def get_dish(
     "/{dish_id}",
     response_model=DishInfo,
     summary="Обновление информации о блюде",
-    description="Только для администраторов и менеджеров."
+    description="Только для администраторов и менеджеров.",
 )
 async def update_dish(
     dish_id: int,

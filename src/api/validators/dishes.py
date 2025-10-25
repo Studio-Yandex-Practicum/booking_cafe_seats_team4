@@ -1,10 +1,11 @@
 from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import bad_request, not_found
-from models.dish import Dish
 from models.cafe import Cafe
+from models.dish import Dish
 from models.user import User
 
 
@@ -18,7 +19,7 @@ async def check_name_unique(session: AsyncSession, obj_name: str) -> None:
 
 async def check_cafe_exists(
         session: AsyncSession,
-        cafe_ids: List[int]
+        cafe_ids: List[int],
 ) -> List[Cafe]:
     """Проверяет, что все кафе существуют."""
     query = select(Cafe).where(Cafe.id.in_(cafe_ids))

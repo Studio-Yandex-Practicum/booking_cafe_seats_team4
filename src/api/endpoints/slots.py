@@ -25,7 +25,7 @@ from schemas.user import UserRole
 
 router = APIRouter(
     prefix='/cafe/{cafe_id}/time_slots',
-    tags=['Временные слоты']
+    tags=['Временные слоты'],
 )
 
 
@@ -51,7 +51,7 @@ async def list_slots(
     only_active = True
     if show_all and current_user and current_user.role in (
         int(UserRole.ADMIN),
-        int(UserRole.MANAGER)
+        int(UserRole.MANAGER),
     ):
         only_active = False
 
@@ -154,7 +154,7 @@ async def update_time_slot_by_id(
             payload,
             session,
             cafe_id,
-            exclude_id=slot_id
+            exclude_id=slot_id,
         )
     updated_slot = await slot_crud.update(slot, payload, session)
     return TimeSlotInfo.model_validate(updated_slot, from_attributes=True)

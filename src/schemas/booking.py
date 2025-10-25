@@ -2,17 +2,33 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import IntEnum
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    StringConstraints,
+    field_validator,
+)
 
-from core.constants import BOOKING_NOTE_MAX
+from core.constants import BOOKING_NOTE_MAX, BOOKING_NOTE_MIN
 from schemas.cafe import CafeShortInfo
 from schemas.user import UserShortInfo
 
 from .slots import TimeSlotShortInfo  # noqa
 from .table import TableShortInfo  # noqa
 from .validators import validate_date_not_past, validate_positive_number
+
+NoteStr = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=BOOKING_NOTE_MIN,
+        max_length=BOOKING_NOTE_MAX,
+    ),
+]
 
 
 class BookingStatus(IntEnum):
@@ -26,13 +42,13 @@ class BookingStatus(IntEnum):
 class BookingBase(BaseModel):
     """Базовая схема бронирования."""
 
-    cafe_id: int
-    tables_id: List[int]
-    slots_id: List[int]
-    guest_number: int
-    note: Optional[str] = Field(None, max_length=BOOKING_NOTE_MAX)
+    cafe_id: PositiveInt
+    tables_id: List[PositiveInt]
+    slots_id: List[PositiveInt]
+    guest_number: PositiveInt
+    note: Optional[NoteStr]
     status: BookingStatus
-    booking_date: date = Field(..., description="Дата в формате YYYY-MM-DD")
+    booking_date: date
 
     @field_validator('booking_date')
     @classmethod
@@ -44,16 +60,6 @@ class BookingBase(BaseModel):
     def _validate_guest_number_positive(cls, v: int) -> int:
         return validate_positive_number(v, 'Количество гостей')
 
-    @field_validator('note')
-    @classmethod
-    def _validate_note_length(cls, v: Optional[str]) -> Optional[str]:
-        if v and len(v) > BOOKING_NOTE_MAX:
-            raise ValueError(
-                f'Длина заметки не может превышать '
-                f'{BOOKING_NOTE_MAX} символов',
-            )
-        return v
-
 
 class BookingCreate(BookingBase):
     """Схема для создания бронирования."""
@@ -62,15 +68,13 @@ class BookingCreate(BookingBase):
 class BookingUpdate(BaseModel):
     """Схема для обновления бронирования."""
 
-    cafe_id: Optional[int] = None
-    tables_id: Optional[List[int]] = None
-    slots_id: Optional[List[int]] = None
-    guest_number: Optional[int] = None
-    booking_date: Optional[date] = Field(
-        None, description="Дата в формате YYYY-MM-DD",
-    )
+    cafe_id: Optional[PositiveInt] = None
+    tables_id: Optional[List[PositiveInt]] = None
+    slots_id: Optional[List[PositiveInt]] = None
+    guest_number: Optional[PositiveInt] = None
+    booking_date: Optional[date] = None
     status: Optional[BookingStatus] = None
-    note: Optional[str] = Field(None, max_length=BOOKING_NOTE_MAX)
+    note: Optional[NoteStr] = None
     is_active: Optional[bool] = None
 
     @field_validator('booking_date')
@@ -104,23 +108,13 @@ class BookingUpdate(BaseModel):
             return validate_positive_number(v, 'Количество гостей')
         return v
 
-    @field_validator('note')
-    @classmethod
-    def _validate_note_length_optional(cls, v: Optional[str]) -> Optional[str]:
-        if v and len(v) > BOOKING_NOTE_MAX:
-            raise ValueError(
-                f'Длина заметки не может превышать '
-                f'{BOOKING_NOTE_MAX} символов',
-            )
-        return v
-
 
 class BookingShortInfo(BaseModel):
     """Краткая информация о бронировании."""
 
-    user_id: int
-    id: int
-    booking_date: date = Field(..., description="Дата в формате YYYY-MM-DD")
+    user_id: PositiveInt
+    id: PositiveInt
+    booking_date: date
     status: BookingStatus
 
     model_config = ConfigDict(from_attributes=True)
@@ -133,8 +127,8 @@ class BookingInfo(BookingShortInfo):
     cafe: CafeShortInfo
     tables: List[TableShortInfo] = Field(alias='tables_id')
     slots: List[TimeSlotShortInfo] = Field(alias='slots_id')
-    guest_number: int
-    note: Optional[str] = Field(None, max_length=BOOKING_NOTE_MAX)
+    guest_number: PositiveInt
+    note: Optional[NoteStr]
     is_active: bool
     created_at: datetime
     updated_at: datetime

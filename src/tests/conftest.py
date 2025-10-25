@@ -5,7 +5,7 @@ from typing import Any, AsyncIterator, Dict, Generator
 import pytest
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import event
+from sqlalchemy import event, update
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncEngine,
@@ -14,13 +14,12 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import Session as ORMSession
-from sqlalchemy import update
-from models.user import User
-from schemas.user import UserRole
 
 from core.config import settings
 from core.db import get_session
 from main import app
+from models.user import User
+from schemas.user import UserRole
 
 
 @pytest.fixture(scope='session')
@@ -166,11 +165,11 @@ async def token_email(client: AsyncClient, user_email: Dict) -> str:
 
 @pytest.fixture
 async def admin(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: пользователь с правами ADMIN."""
     user_data = await _create_user(
-        client, username='admin', email='admin@a.com'
+        client, username='admin', email='admin@a.com',
     )
     async with sessionmaker() as session:
         stmt = (
@@ -185,11 +184,11 @@ async def admin(
 
 @pytest.fixture
 async def manager1(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: первый пользователь с правами MANAGER."""
     user_data = await _create_user(
-        client, username='manager1', email='m1@m.com'
+        client, username='manager1', email='m1@m.com',
     )
     async with sessionmaker() as session:
         stmt = (
@@ -204,11 +203,11 @@ async def manager1(
 
 @pytest.fixture
 async def manager2(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: второй пользователь с правами MANAGER."""
     user_data = await _create_user(
-        client, username='manager2', email='m2@m.com'
+        client, username='manager2', email='m2@m.com',
     )
     async with sessionmaker() as session:
         stmt = (

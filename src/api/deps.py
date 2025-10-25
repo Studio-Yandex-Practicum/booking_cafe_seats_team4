@@ -2,9 +2,9 @@ from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, Request, Response, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
-from sqlalchemy import select
 
 from core.db import get_session
 from core.security import TokenError, decode_token

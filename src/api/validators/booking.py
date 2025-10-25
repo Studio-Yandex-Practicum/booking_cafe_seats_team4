@@ -1,5 +1,5 @@
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,78 +20,6 @@ async def booking_exists(booking_id: int, session: AsyncSession) -> Booking:
     if booking is None or booking.status != BookingStatus.ACTIVE.value:
         raise not_found('Такой брони нет или она не активна.')
     return booking
-
-
-async def check_all_objects_id(
-    cafe_id: int,
-    slots_id: List[int],
-    tables_id: List[int],
-    booking_date: date,
-    session: AsyncSession,
-) -> None:
-    """Проверяет существование кафе, слотов и столов по их ID.
-
-    Затем валидирует отсутствие конфликтующих бронирований.
-    """
-    cafe = await session.get(Cafe, cafe_id)
-    if cafe is None:
-        raise not_found(f'Нет кафе с ID: {cafe_id}')
-    for slot_id in slots_id:
-        slot = await session.get(Slot, slot_id)
-        if slot is None:
-            raise not_found(f'Нет временного слота с ID: {slot_id}')
-
-    for table_id in tables_id:
-        table = await session.get(Table, table_id)
-        if table is None:
-            raise not_found(f'Нет стола с ID: {table_id}')
-
-    await check_booking_conflicts(
-        cafe_id, slots_id, tables_id, booking_date, session)
-
-
-async def check_booking_conflicts(
-    cafe_id: int,
-    slots_id: list[int],
-    tables_id: list[int],
-    booking_date: date,
-    session: AsyncSession,
-) -> None:
-    """Проверяет наличие конфликтующих бронирований."""
-    stmt = (
-        select(Booking)
-        .join(Booking.slots_id)
-        .join(Booking.tables_id)
-        .where(
-            Booking.cafe_id == cafe_id,
-            Booking.status == BookingStatus.ACTIVE.value,
-            Booking.booking_date == booking_date,
-            Slot.id.in_(slots_id),
-            Table.id.in_(tables_id),
-        )
-    )
-
-    result = await session.execute(stmt)
-    conflicting_bookings = result.scalars().all()
-    if conflicting_bookings:
-        conflicting_slots = set()
-        conflicting_tables = set()
-        for booking in conflicting_bookings:
-            for slot in booking.slots_id:
-                if slot.id in slots_id:
-                    conflicting_slots.add(slot.id)
-            for table in booking.tables_id:
-                if table.id in tables_id:
-                    conflicting_tables.add(table.id)
-        err_msg = []
-        if conflicting_slots:
-            err_msg.append(f'Слоты уже заняты: {sorted(conflicting_slots)}')
-        if conflicting_tables:
-            err_msg.append(f'Столы уже заняты: {sorted(conflicting_tables)}')
-
-        raise bad_request(
-            'Найдены конфликтующие бронирования. ' + '; '.join(err_msg),
-        )
 
 
 async def check_booking_date(booking_date: date) -> None:
@@ -136,3 +64,111 @@ async def user_can_manage_cafe(
         if cafe in user.managed_cafes:
             return
     raise forbidden('У вас нет прав доступа.')
+
+
+async def admin_or_manager_check(
+        user: User,
+) -> bool:
+    if user.role in (int(UserRole.MANAGER), int(UserRole.ADMIN)):
+        return True
+    return False
+
+
+async def check_all_objects_id(
+    cafe_id: int,
+    slots_id: List[int],
+    tables_id: List[int],
+    session: AsyncSession,
+) -> None:
+    """Проверяет существование кафе, слотов и столов по их ID.
+    """
+    cafe = await session.get(Cafe, cafe_id)
+    if cafe is None:
+        raise not_found(f'Нет кафе с ID: {cafe_id}')
+    for slot_id in slots_id:
+        slot = await session.get(Slot, slot_id)
+        if slot is None:
+            raise not_found(f'Нет временного слота с ID: {slot_id}')
+    for table_id in tables_id:
+        table = await session.get(Table, table_id)
+        if table is None:
+            raise not_found(f'Нет стола с ID: {table_id}')
+
+
+async def check_booking_conflicts(
+    cafe_id: int,
+    slots_id: list[int],
+    tables_id: list[int],
+    booking_date: date,
+    session: AsyncSession,
+    booking_id: Optional[int] = None,
+) -> None:
+    """Проверяет наличие конфликтующих бронирований."""
+    stmt = (
+        select(Booking)
+        .join(Booking.slots_id)
+        .join(Booking.tables_id)
+        .where(
+            Booking.cafe_id == cafe_id,
+            Booking.status == BookingStatus.ACTIVE.value,
+            Booking.booking_date == booking_date,
+            Slot.id.in_(slots_id),
+            Table.id.in_(tables_id),
+        )
+    )
+    if booking_id is not None:
+        stmt = stmt.where(Booking.id != booking_id)
+    result = await session.execute(stmt)
+    conflicting_bookings = result.scalars().all()
+    if conflicting_bookings:
+        conflicting_slots = set()
+        conflicting_tables = set()
+        for booking in conflicting_bookings:
+            for slot in booking.slots_id:
+                if slot.id in slots_id:
+                    conflicting_slots.add(slot.id)
+            for table in booking.tables_id:
+                if table.id in tables_id:
+                    conflicting_tables.add(table.id)
+        err_msg = []
+        if conflicting_slots:
+            err_msg.append(f'Слоты уже заняты: {sorted(conflicting_slots)}')
+        if conflicting_tables:
+            err_msg.append(f'Столы уже заняты: {sorted(conflicting_tables)}')
+
+        raise bad_request(
+            'Найдены конфликтующие бронирования. ' + '; '.join(err_msg),
+        )
+
+
+async def check_all_objects(
+    cafe_id: int,
+    slots_id: List[int],
+    tables_id: List[int],
+    booking_date: date,
+    session: AsyncSession,
+    booking_id: Optional[int] = None,
+) -> None:
+    """Проверяет существование объектов и конфликты для обновления."""
+    await check_all_objects_id(cafe_id, slots_id, tables_id, session)
+    await check_booking_conflicts(
+        cafe_id, slots_id, tables_id, booking_date, session, booking_id,
+    )
+
+
+async def check_current_user_booking(
+    booking_id: int,
+    user: User,
+    session: AsyncSession,
+) -> Optional[Booking]:
+    """Проверяет, что бронь существует и активна для конкретного юзера."""
+    booking = await session.execute(
+        select(Booking).where(
+            Booking.id == booking_id,
+            Booking.user_id == user.id,
+        ),
+    )
+    booking = booking.scalars().first()
+    if booking is None or booking.status != BookingStatus.ACTIVE.value:
+        raise not_found('Такой брони нет или она не активна.')
+    return booking

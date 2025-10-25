@@ -1,10 +1,11 @@
 from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import err
-from schemas.dish import DishCreate, DishUpdate
 from models.dish import Dish
 from models.user import User
+from schemas.dish import DishCreate, DishUpdate
 
 
 class DishService:
@@ -23,7 +24,7 @@ class DishService:
             self,
             dish_in: DishCreate,
             user: User,
-            session: AsyncSession
+            session: AsyncSession,
     ) -> Dish:
         """Создать новое блюдо."""
         dish = await self.crud.create(obj_in=dish_in, session=session)
@@ -34,14 +35,14 @@ class DishService:
             dish_id: int,
             dish_in: DishUpdate,
             user: User,
-            session: AsyncSession
+            session: AsyncSession,
     ) -> Dish:
         """Обновить блюдо."""
         dish = await self.get(dish_id, session)
         updated = await self.crud.update(
             db_obj=dish,
             obj_in=dish_in,
-            session=session
+            session=session,
         )
         return updated
 
