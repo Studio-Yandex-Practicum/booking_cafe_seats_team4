@@ -33,7 +33,7 @@ router = APIRouter(prefix='/cafe/{cafe_id}/tables', tags=['Столы'])
     },
 )
 @cache_response(
-    cache_key_template="tables:{user.role}",
+    cache_key_template="tables:{current_user.role}",
     expire=EXPIRE_CASHE_TIME,
     response_model=TableInfo
 )

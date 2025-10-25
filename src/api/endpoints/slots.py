@@ -37,7 +37,7 @@ router = APIRouter(
     },
 )
 @cache_response(
-    cache_key_template="slots:{user.role}",
+    cache_key_template="slots:{current_user.role}",
     expire=EXPIRE_CASHE_TIME,
     response_model=TimeSlotInfo
 )

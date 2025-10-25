@@ -31,7 +31,7 @@ router = APIRouter(prefix='/cafes', tags=['Кафе'])
     },
 )
 @cache_response(
-    cache_key_template="cafe:{user.role}",
+    cache_key_template="cafe:{current_user.role}",
     expire=EXPIRE_CASHE_TIME,
     response_model=CafeInfo
 )
