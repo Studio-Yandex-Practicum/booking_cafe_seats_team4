@@ -33,7 +33,7 @@ router = APIRouter(prefix='/actions', tags=['Акции'])
     },
 )
 @cache_response(
-    cashe_key_template="actions:{current_user.role}:{show_all}",
+    cache_key_template="actions:{current_user.role}:{show_all}",
     expire=EXPIRE_CASHE_TIME,
     response_model=ActionInfo,
 )
