@@ -7,15 +7,17 @@ from email.utils import formatdate
 from pathlib import Path
 from typing import Optional
 
-from celery.result import AsyncResult
 from PIL import Image
+from celery.result import AsyncResult
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from celery_tasks.celery_app import celery_app
 from core.config import settings
-from core.email_templates import (BOOKING_CONFIRMATION_TEMPLATE,
-                                  BOOKING_INFORMATION_FOR_MANAGER)
+from core.email_templates import (
+    BOOKING_CONFIRMATION_TEMPLATE,
+    BOOKING_INFORMATION_FOR_MANAGER,
+)
 from models.booking import Booking
 from models.cafe import Cafe
 from models.user import User
@@ -31,7 +33,6 @@ SMTP_PASSWORD = settings.SMTP_PASSWORD
 @celery_app.task(name='save_image')
 def save_image(image_data: bytes, media_id: str) -> dict[str, str]:
     """Сохранить картинку как JPEG `<media_id>.jpg`."""
-
     try:
         image = Image.open(io.BytesIO(image_data))
         if image.mode != 'RGB':
@@ -64,7 +65,6 @@ def send_email_smtp(recipient: str, subject: str, body: str) -> bool:
 
 def create_sync_session():
     """Функция создания синхронной сессии для celery задач"""
-
     sync_database_url = settings.DATABASE_URL.replace('asyncpg', 'psycopg2')
     engine = create_engine(sync_database_url)
     Session = sessionmaker(bind=engine)
@@ -88,7 +88,6 @@ def send_email_task(
 @celery_app.task(name='send_mass_mail')
 def send_mass_mail(body: str, subject: str = 'Новая акция') -> str:
     """Разослать письмо всем активным пользователям."""
-
     session, engine = create_sync_session()
     try:
         recipients = session.execute(select(User).where(User.is_active))
@@ -111,7 +110,6 @@ def send_booking_notification(
         booking_id: int,
         reminder_task_id: Optional[str] = None) -> str:
     """Основная задача отправки уведомлений о бронировании"""
-
     if reminder_task_id:
         task = AsyncResult(reminder_task_id)
         task.revoke(terminate=True)
@@ -129,33 +127,33 @@ def send_booking_notification(
         earliest_slot = min(
             slots,
             key=lambda x: datetime.strptime(
-                x.start_time, '%H:%M'
+                x.start_time, '%H:%M',
             ))
         lastest_slot = max(
             slots,
             key=lambda x: datetime.strptime(
-                x.start_time, '%H:%M'
+                x.start_time, '%H:%M',
             ))
         email_body = BOOKING_CONFIRMATION_TEMPLATE.format(
             username='ddd',
             booking_date=booking.booking_date,
             cafe=cafe.name,
             first_slot=earliest_slot.start_time,
-            last_slot=lastest_slot.end_time
+            last_slot=lastest_slot.end_time,
         )
         if user.email:
             send_email_task.delay(
                 user.email,
                 'Подтверждение бронирования',
-                body=email_body
+                body=email_body,
             )
             reminder_task = send_email_task.apply_async(
                 args=[user.email, 'Напоминание о бронировании', email_body],
                 eta=datetime.combine(
                     booking.booking_date,
                     datetime.strptime(
-                        earliest_slot.start_time, '%H:%M'
-                    ).time()) - timedelta(hours=1)
+                        earliest_slot.start_time, '%H:%M',
+                    ).time()) - timedelta(hours=1),
             )
             booking.reminder_task_id = reminder_task.id
             session.commit()
@@ -164,14 +162,14 @@ def send_booking_notification(
             booking_date=booking.booking_date,
             first_slot=earliest_slot.start_time,
             last_slot=lastest_slot.end_time,
-            table=booking.tables_id
+            table=booking.tables_id,
         )
         for manager in managers:
             if manager.email:
                 send_email_task.delay(
                     manager.email,
                     'Новое бронирование',
-                    email_body
+                    email_body,
                 )
         return 'Сообщение направлено менеджерам и пользователю'
     finally:

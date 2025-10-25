@@ -26,7 +26,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if not show_all:
             query = query.where(Booking.is_active)
         for field, value in kwargs.items():
-            if hasattr(self.model, field) and value is not None:
+            if hasattr(self.model, field) and (value is not None):
                 query = query.where(getattr(self.model, field) == value)
         result = await session.execute(query)
         bookings_db = result.scalars().all()
@@ -44,7 +44,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         """Получение бронирования для конкретного юзера."""
         query = await session.execute(
             select(Booking).where(
-                Booking.booking_id == booking_id,
+                Booking.id == booking_id,
                 Booking.user_id == user.id,
             ),
         )

@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from typing import List, Optional, Annotated
 
 import redis
@@ -7,6 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
 from api.dish_service import DishService
+from api.validators.dishes import (
+    check_cafe_exists,
+    check_dish_access,
+    check_name_unique,
+)
 from api.validators.dishes import (check_cafe_exists, check_dish_access,
                                    check_name_unique)
 from core.db import get_session
@@ -29,7 +36,7 @@ dish_service = DishService(crud=dish_crud)
     description=(
         "Для администраторов и менеджеров - все блюда, "
         "для пользователей - только активные."
-    )
+    ),
 )
 @cache_response(
     cache_key_template="dishes:{current_user.role}:{show_all}",
@@ -41,7 +48,7 @@ async def get_dishes(
     cafe_id: Optional[int] = Query(None, description="ID кафе для фильтрации"),
     show_all: bool = Query(
         False,
-        description="Показать все блюда (только для staff)"
+        description="Показать все блюда (только для staff)",
     ),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -60,7 +67,7 @@ async def get_dishes(
     "",
     response_model=DishInfo,
     summary="Создание нового блюда",
-    description="Только для администраторов и менеджеров."
+    description="Только для администраторов и менеджеров.",
 )
 async def create_dish(
     redis_client: Annotated[redis.Redis, Depends(get_redis)],
@@ -85,7 +92,7 @@ async def create_dish(
     description=(
         "Для администраторов и менеджеров - все блюда, "
         "для пользователей - только активные."
-    )
+    ),
 )
 @cache_response(
     cache_key_template="dishes:{dish_id}",
@@ -107,7 +114,7 @@ async def get_dish(
     "/{dish_id}",
     response_model=DishInfo,
     summary="Обновление информации о блюде",
-    description="Только для администраторов и менеджеров."
+    description="Только для администраторов и менеджеров.",
 )
 async def update_dish(
     redis_client: Annotated[redis.Redis, Depends(get_redis)],

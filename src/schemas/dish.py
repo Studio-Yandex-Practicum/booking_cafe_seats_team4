@@ -15,12 +15,12 @@ class DishBase(BaseModel):
     name: str = Field(
         ...,
         min_length=NAME_MIN,
-        max_length=NAME_MAX, description="Название блюда"
+        max_length=NAME_MAX, description="Название блюда",
     )
     description: str = Field(
         ...,
         min_length=DESCRIPTION_MIN,
-        description="Описание блюда"
+        description="Описание блюда",
     )
     photo_id: UUID = Field(..., description="UUID фото блюда")
     price: float = Field(..., gt=0, description="Цена блюда")
@@ -32,7 +32,7 @@ class DishCreate(DishBase):
     cafes_id: List[int] = Field(
         ...,
         min_items=1,
-        description="Список ID кафе, где доступно блюдо"
+        description="Список ID кафе, где доступно блюдо",
     )
 
 
@@ -43,18 +43,18 @@ class DishUpdate(BaseModel):
         None,
         min_length=NAME_MIN,
         max_length=NAME_MAX,
-        description="Название блюда"
+        description="Название блюда",
     )
     description: Optional[str] = Field(
         None,
         min_length=DESCRIPTION_MIN,
-        description="Описание блюда"
+        description="Описание блюда",
     )
     photo_id: Optional[UUID] = Field(None, description="UUID фото блюда")
     price: Optional[float] = Field(None, gt=0, description="Цена блюда")
     cafes_id: Optional[List[int]] = Field(
         None, min_items=1,
-        description="Список ID кафе"
+        description="Список ID кафе",
     )
     is_active: Optional[bool] = Field(None, description="Активно ли блюдо")
 
@@ -65,7 +65,7 @@ class DishInfo(DishBase):
     id: int = Field(..., description="ID блюда")
     cafes: List[CafeShortInfo] = Field(
         ...,
-        description="Кафе, где доступно блюдо"
+        description="Кафе, где доступно блюдо",
     )
     is_active: bool = Field(..., description="Активно ли блюдо")
     created_at: datetime = Field(..., description="Дата создания")

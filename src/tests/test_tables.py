@@ -15,7 +15,7 @@ async def cafe_for_manager1(client: AsyncClient, manager1_token: str, manager1: 
         'name': "Кафе для Тестов Столов",
         'address': 'г. Тест, ул. Фикстур, д. 2',
         'phone': '+7(111)111-11-11',
-        "managers_id": [manager1['id']]
+        "managers_id": [manager1['id']],
     }
     res = await client.post('/cafes', headers=headers, json=payload)
     assert res.status_code == 200
@@ -24,7 +24,7 @@ async def cafe_for_manager1(client: AsyncClient, manager1_token: str, manager1: 
 
 @pytest.mark.anyio
 async def test_manager_create_table_in_own_cafe_success(
-    client: AsyncClient, manager1_token: str, cafe_for_manager1: dict
+    client: AsyncClient, manager1_token: str, cafe_for_manager1: dict,
 ) -> None:
     """Менеджер может создать стол в своем кафе."""
     headers = {'Authorization': f'Bearer {manager1_token}'}
@@ -40,7 +40,7 @@ async def test_manager_create_table_in_own_cafe_success(
 
 @pytest.mark.anyio
 async def test_manager_create_table_in_foreign_cafe_forbidden(
-    client: AsyncClient, manager2_token: str, cafe_for_manager1: dict
+    client: AsyncClient, manager2_token: str, cafe_for_manager1: dict,
 ) -> None:
     """Менеджер не может создать стол в чужом кафе."""
     headers = {'Authorization': f'Bearer {manager2_token}'}
@@ -53,7 +53,7 @@ async def test_manager_create_table_in_foreign_cafe_forbidden(
 
 @pytest.mark.anyio
 async def test_update_table_by_owner_manager_success(
-    client: AsyncClient, manager1_token: str, cafe_for_manager1: dict
+    client: AsyncClient, manager1_token: str, cafe_for_manager1: dict,
 ) -> None:
     """Менеджер может обновить стол в своем кафе."""
     headers = {'Authorization': f'Bearer {manager1_token}'}
@@ -74,7 +74,7 @@ async def test_update_table_by_owner_manager_success(
 
 @pytest.mark.anyio
 async def test_user_cannot_create_table(
-    client: AsyncClient, token_email: str, cafe_for_manager1: dict
+    client: AsyncClient, token_email: str, cafe_for_manager1: dict,
 ) -> None:
     """Обычный пользователь не может создать стол."""
     headers = {'Authorization': f'Bearer {token_email}'}

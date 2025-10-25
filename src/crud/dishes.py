@@ -38,7 +38,7 @@ class CRUDDish(CRUDBase[Dish, DishCreate, DishUpdate]):
         cafes = []
         if cafe_ids:
             cafes_query = await session.execute(
-                select(Cafe).where(Cafe.id.in_(cafe_ids))
+                select(Cafe).where(Cafe.id.in_(cafe_ids)),
             )
             cafes = list(cafes_query.scalars().all())
 
@@ -59,7 +59,7 @@ class CRUDDish(CRUDBase[Dish, DishCreate, DishUpdate]):
         cafe_ids = update_data.pop("cafes_id", None)
         if cafe_ids is not None:
             cafes_query = await session.execute(
-                select(Cafe).where(Cafe.id.in_(cafe_ids))
+                select(Cafe).where(Cafe.id.in_(cafe_ids)),
             )
             db_obj.cafes = list(cafes_query.scalars().all())
         for field, value in update_data.items():

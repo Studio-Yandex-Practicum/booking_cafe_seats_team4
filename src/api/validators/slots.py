@@ -31,7 +31,7 @@ def user_can_manage_cafe(user: User, cafe: Cafe) -> None:
     if user.role == int(UserRole.ADMIN):
         return
     if user.role == int(UserRole.MANAGER):
-        if cafe in user.managed_cafes:
+        if user in cafe.managers:
             return
     raise err('FORBIDDEN', 'У вас нет прав доступа.', 403)
 
@@ -68,5 +68,5 @@ async def validate_no_time_overlap(
             raise err(
                 'BAD_REQUEST',
                 'Слот пересекается с другим по времени.',
-                400
+                400,
             )
