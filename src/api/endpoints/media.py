@@ -51,4 +51,8 @@ async def get_image(media_id: str) -> FileResponse:
         path=file_path,
         media_type='image/jpeg',
         filename=filename,
+        headers={
+            'Content-Disposition': f'inline; filename="{filename}"',
+            'Cache-Control': 'public, max-age=3600'
+        }
     )

@@ -2,7 +2,7 @@ from typing import Annotated, List, Annotated
 
 import redis
 from fastapi import APIRouter, Depends, Path, Query, status
-# from fastapi.encoders import jsonable_encoder
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.cafe_service import CafeService
@@ -49,7 +49,7 @@ async def get_all_cafes(
     (с возможностью выбора), для пользователей - только активные.
     """
 
-    cache_key = f"booking:{current_user.role}"
+    cache_key = f"cafes:{current_user.role}"
     cached_cafe = await redis_cache.get_cached_data(cache_key)
     if cached_cafe:
         return [CafeInfo(**cafe) for cafe in cached_cafe]
@@ -58,6 +58,8 @@ async def get_all_cafes(
         current_user,
         show_all,
     )
+    cafes_data = jsonable_encoder(cafes)
+    await redis_cache.set_cached_data(cache_key, cafes_data, expire=600)
     return cafes
 
 
@@ -82,7 +84,10 @@ async def create_cafe(
     _: Annotated[UserInfo, Depends(require_manager_or_admin)],
 ) -> CafeInfo:
     """Создает новое кафе. Только для администраторов и менеджеров."""
-    return await CafeService.create_cafe(session, cafe_in, current_user)
+
+    cafe = await CafeService.create_cafe(session, cafe_in, current_user)
+    await redis_cache.delete_pattern("cafes:*")
+    return cafe
 
 
 @router.get(
