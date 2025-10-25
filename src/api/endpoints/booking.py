@@ -22,6 +22,9 @@ from api.validators.booking import (
     user_can_manage_cafe,
 )
 from core.db import get_session
+from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from crud.booking import booking_crud
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
@@ -35,7 +38,13 @@ router = APIRouter(prefix='/booking', tags=['Бронирования'])
                 **UNAUTHORIZED_RESPONSE,
                 **VALIDATION_ERROR_RESPONSE},
             )
+@cache_response(
+    cache_key_template="booking:{user.role}:{show_all}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=BookingInfo
+)
 async def get_list_booking(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
@@ -47,6 +56,7 @@ async def get_list_booking(
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
+
     if cafe_id:
         await cafe_exists(cafe_id, session)
     if not await admin_or_manager_check(user):

@@ -7,13 +7,8 @@ from typing import Any, Dict, Tuple
 from sqlalchemy.orm.exc import DetachedInstanceError
 
 from core.config import settings
-from core.constants import (
-    DEFAULT_USER_ID,
-    DEFAULT_USER_NAME,
-    LOG_BACKUP_COUNT,
-    LOG_FORMAT,
-    LOG_MAX_BYTES,
-)
+from core.constants import (DEFAULT_USER_ID, DEFAULT_USER_NAME,
+                            LOG_BACKUP_COUNT, LOG_FORMAT, LOG_MAX_BYTES)
 
 
 class SafeExtraFormatter(logging.Formatter):

@@ -7,7 +7,7 @@ from models.booking import Booking
 from models.slots import Slot
 from models.table import Table
 from models.user import User
-from schemas.booking import BookingCreate, BookingUpdate
+from schemas.booking import BookingCreate, BookingUpdate, BookingInfo
 
 from .base import CRUDBase, audit_event
 
@@ -19,7 +19,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         self,
         session: AsyncSession,
         **kwargs: dict,
-    ) -> list[Booking]:
+    ) -> list[BookingInfo]:
         """Получение всех бронированний с дополнительными параметрами."""
         query = select(Booking)
         show_all = kwargs.pop('show_all', False)
@@ -29,14 +29,18 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             if hasattr(self.model, field) and (value is not None):
                 query = query.where(getattr(self.model, field) == value)
         result = await session.execute(query)
-        return result.scalars().all()
+        bookings_db = result.scalars().all()
+        return [
+            BookingInfo.model_validate(
+                booking, from_attributes=True
+            ) for booking in bookings_db]
 
     async def get_booking_current_user(
         self,
         booking_id: int,
         user: User,
         session: AsyncSession,
-    ) -> Booking:
+    ) -> BookingInfo:
         """Получение бронирования для конкретного юзера."""
         query = await session.execute(
             select(Booking).where(
@@ -44,14 +48,17 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 Booking.user_id == user.id,
             ),
         )
-        return query.scalars().first()
+        booking_db = query.scalars().first()
+        if booking_db:
+            return BookingInfo.model_validate(booking_db, from_attributes=True)
+        return None
 
     async def create_booking(
         self,
         obj_in: BookingCreate,
         user_id: Optional[int] = None,
         session: AsyncSession = None,
-    ) -> Booking:
+    ) -> BookingInfo:
         """Создать бронирование с обработкой отношений."""
         slots = await session.execute(
             select(Slot).where(Slot.id.in_(obj_in.slots_id)),
@@ -81,7 +88,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             user_id=getattr(db_obj, 'user_id', None),
         )
 
-        return db_obj
+        return BookingInfo.model_validate(db_obj, from_attributes=True)
 
 
 booking_crud = CRUDBooking(Booking)

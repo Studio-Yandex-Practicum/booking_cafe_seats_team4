@@ -3,9 +3,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.validators.users import (
-    apply_user_update as apply_user_update,  # noqa: F401
-)
+from api.validators.users import \
+    apply_user_update as apply_user_update  # noqa: F401
 from core.security import hash_password
 from models.user import User
 from schemas.user import UserRole
