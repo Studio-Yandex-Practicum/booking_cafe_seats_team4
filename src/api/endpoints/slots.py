@@ -1,24 +1,21 @@
 from typing import Annotated, List
 
+import redis
 from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user_optional, require_manager_or_admin
 from api.exceptions import err
-from api.responses import (
-    FORBIDDEN_RESPONSE,
-    NOT_FOUND_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
-from api.validators.slots import (
-    cafe_exists,
-    slot_exists,
-    user_can_manage_cafe,
-    validate_no_time_overlap,
-)
+from api.responses import (FORBIDDEN_RESPONSE, NOT_FOUND_RESPONSE,
+                           UNAUTHORIZED_RESPONSE, VALIDATION_ERROR_RESPONSE)
+from api.validators.slots import (cafe_exists, slot_exists,
+                                  user_can_manage_cafe,
+                                  validate_no_time_overlap)
 from core.db import get_session
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from crud.slots import slot_crud
+from core.redis import get_redis, redis_cache
 from models.user import User
 from schemas.slots import TimeSlotCreate, TimeSlotInfo, TimeSlotUpdate
 from schemas.user import UserRole
@@ -39,7 +36,13 @@ router = APIRouter(
         **VALIDATION_ERROR_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="slots:{current_user.role}:{show_all}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=TimeSlotInfo
+)
 async def list_slots(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[int, Path(description='ID кафе')],
     current_user: Annotated[User | None, Depends(get_current_user_optional)],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -56,7 +59,8 @@ async def list_slots(
         only_active = False
 
     slots = await slot_crud.get_by_cafe(cafe.id, session, only_active)
-    return [TimeSlotInfo.model_validate(slot, from_attributes=True) for slot in slots]
+    return [TimeSlotInfo.model_validate(
+        slot, from_attributes=True) for slot in slots]
 
 
 @router.post(
@@ -72,6 +76,7 @@ async def list_slots(
     },
 )
 async def create_slot(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[int, Path(description='ID кафе')],
     payload: TimeSlotCreate,
     current_user: Annotated[User, Depends(require_manager_or_admin)],
@@ -85,6 +90,7 @@ async def create_slot(
         payload,
         session,
         cafe_id=cafe_id)
+    await redis_cache.delete_pattern('slots:*')
     return TimeSlotInfo.model_validate(slot, from_attributes=True)
 
 
@@ -97,7 +103,13 @@ async def create_slot(
         **VALIDATION_ERROR_RESPONSE,
     },
 )
+@cache_response(
+    cache_key_template="slots:{slot_id}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=TimeSlotInfo
+)
 async def get_time_slot_by_id(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[int, Path(description='ID кафе')],
     slot_id: Annotated[int, Path(description='ID слота')],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -108,7 +120,9 @@ async def get_time_slot_by_id(
     slot = await slot_exists(slot_id, session)
     if slot.cafe_id != cafe_id:
         raise err('NOT_FOUND', 'Слот не найден в данном кафе', 404)
-    if (not current_user or current_user.role == UserRole.USER) and not slot.is_active:
+    if (
+        not current_user or current_user.role == UserRole.USER
+    ) and not slot.is_active:
         raise err('NOT_FOUND', 'Слот не найден', 404)
     if current_user and current_user.role == UserRole.MANAGER:
         cafe = await cafe_exists(cafe_id, session)
@@ -128,6 +142,7 @@ async def get_time_slot_by_id(
     },
 )
 async def update_time_slot_by_id(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     cafe_id: Annotated[int, Path(description='ID кафе')],
     slot_id: Annotated[int, Path(description='ID слота')],
     payload: TimeSlotUpdate,
@@ -157,4 +172,5 @@ async def update_time_slot_by_id(
             exclude_id=slot_id
         )
     updated_slot = await slot_crud.update(slot, payload, session)
+    await redis_cache.delete_pattern('slots:*')
     return TimeSlotInfo.model_validate(updated_slot, from_attributes=True)

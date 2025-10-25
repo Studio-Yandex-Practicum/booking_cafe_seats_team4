@@ -1,20 +1,10 @@
-from sqlalchemy import (
-    CheckConstraint,
-    Column,
-    Integer,
-    String,
-    UniqueConstraint,
-)
+from sqlalchemy import (CheckConstraint, Column, Integer, String,
+                        UniqueConstraint)
 from sqlalchemy.orm import relationship
 
-from core.constants import (
-    CK_USERS_CONTACT_REQUIRED,
-    EMAIL_MAX,
-    PASSWORD_HASH_MAX,
-    PHONE_MAX,
-    TG_ID_MAX,
-    USERNAME_MAX,
-)
+from core.constants import (CK_USERS_CONTACT_REQUIRED, EMAIL_MAX,
+                            PASSWORD_HASH_MAX, PHONE_MAX, TG_ID_MAX,
+                            USERNAME_MAX)
 from schemas.user import UserRole
 
 from .base import BaseModel

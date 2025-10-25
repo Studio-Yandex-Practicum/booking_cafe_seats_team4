@@ -1,10 +1,11 @@
 from typing import List, Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.base import CRUDBase
-from models.dish import Dish
 from models.cafe import Cafe
+from models.dish import Dish
 from schemas.dish import DishCreate, DishUpdate
 
 

@@ -1,10 +1,11 @@
 from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.exceptions import bad_request, not_found
-from models.dish import Dish
 from models.cafe import Cafe
+from models.dish import Dish
 from models.user import User
 
 

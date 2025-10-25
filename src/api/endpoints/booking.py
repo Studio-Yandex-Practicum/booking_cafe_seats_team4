@@ -1,29 +1,24 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
-from api.responses import (
-    BAD_RESPONSE,
-    FORBIDDEN_RESPONSE,
-    NOT_FOUND_RESPONSE,
-    UNAUTHORIZED_RESPONSE,
-    VALIDATION_ERROR_RESPONSE,
-)
+import redis
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, require_manager_or_admin
-from api.validators.booking import (
-    ban_change_status,
-    booking_exists,
-    cafe_exists,
-    check_all_objects_id,
-    check_booking_date,
-    user_can_manage_cafe,
-)
+from api.responses import (BAD_RESPONSE, FORBIDDEN_RESPONSE,
+                           NOT_FOUND_RESPONSE, UNAUTHORIZED_RESPONSE,
+                           VALIDATION_ERROR_RESPONSE)
+from api.validators.booking import (ban_change_status, booking_exists,
+                                    cafe_exists, check_all_objects_id,
+                                    check_booking_date, user_can_manage_cafe)
+from celery_tasks.tasks import send_booking_notification
 from core.db import get_session
+from core.redis import get_redis, redis_cache
+from core.decorators.redis import cache_response
+from core.constants import EXPIRE_CASHE_TIME
 from crud.booking import booking_crud
 from models.user import User
 from schemas.booking import BookingCreate, BookingInfo, BookingUpdate
-from celery_tasks.tasks import send_booking_notification
 
 router = APIRouter(prefix='/booking', tags=['Бронирования'])
 
@@ -34,7 +29,13 @@ router = APIRouter(prefix='/booking', tags=['Бронирования'])
                 **UNAUTHORIZED_RESPONSE,
                 **VALIDATION_ERROR_RESPONSE},
             )
+@cache_response(
+    cache_key_template="booking:{user.role}:{show_all}",
+    expire=EXPIRE_CASHE_TIME,
+    response_model=BookingInfo
+)
 async def get_list_booking(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     show_all: Optional[bool] = False,
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
@@ -46,6 +47,7 @@ async def get_list_booking(
     Для администраторов и менеджеров - все бронирования (с возможностью
     фильтрации), для обычных пользователей - только свои бронирования.
     """
+
     if cafe_id:
         await cafe_exists(cafe_id, session)
     if not await require_manager_or_admin(user):
@@ -89,6 +91,7 @@ async def create_booking(
     )
     new_booking = await booking_crud.create_booking(booking, user.id, session)
     send_booking_notification.delay(new_booking.id)
+    await redis_cache.delete_pattern("booking:*")
     return new_booking
 
 
@@ -161,4 +164,5 @@ async def update_booking(
     await ban_change_status(booking, obj_in)
     update_booking = booking_crud.update(booking, obj_in, session)
     send_booking_notification.delay(update_booking.id)
+    await redis_cache.delete_pattern("booking:*")
     return update_booking

@@ -1,13 +1,3 @@
-from schemas.user import UserRole
-from schemas.table import TableCreate as TableCreateSchema
-from schemas.cafe import CafeCreate
-from models.user import User
-from models.table import Table
-from models.cafe import Cafe
-from crud.table import table_crud
-from crud.cafe import cafe_crud
-from core.security import hash_password
-from core.config import settings
 import asyncio
 import sys
 from pathlib import Path
@@ -15,6 +5,16 @@ from pathlib import Path
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from core.config import settings
+from core.security import hash_password
+from crud.cafe import cafe_crud
+from crud.table import table_crud
+from models.cafe import Cafe
+from models.table import Table
+from models.user import User
+from schemas.cafe import CafeCreate
+from schemas.table import TableCreate as TableCreateSchema
+from schemas.user import UserRole
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 

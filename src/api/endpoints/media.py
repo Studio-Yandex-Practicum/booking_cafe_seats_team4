@@ -5,10 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
 from api.deps import require_manager_or_admin
-from api.validators.media import (
-    check_len_file,
-    media_allowed_content_type,
-)
+from api.validators.media import check_len_file, media_allowed_content_type
 from celery_tasks.tasks import save_image
 from core.config import settings
 from schemas.media import MediaUploadResponse
@@ -54,4 +51,8 @@ async def get_image(media_id: str) -> FileResponse:
         path=file_path,
         media_type='image/jpeg',
         filename=filename,
+        headers={
+            'Content-Disposition': f'inline; filename="{filename}"',
+            'Cache-Control': 'public, max-age=3600'
+        }
     )

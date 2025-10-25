@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-
 CAFE_PAYLOAD = {
     'name': "Тестовая кофейня",
     'address': 'г. Тест, ул. Юнит, д. 1',
