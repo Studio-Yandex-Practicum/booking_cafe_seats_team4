@@ -61,11 +61,6 @@ async def get_all_actions(
     Для администраторов и менеджеров - все акции
     (с возможностью выбора), для пользователей - только активные.
     """
-    cache_key = f"actions:{current_user.role}:{show_all}"
-    cached_actions = await redis_cache.get_cached_data(cache_key)
-    if cached_actions:
-        return [ActionInfo(**action) for action in cached_actions]
-    actions = await ActionService.get_all_actions(
 
     return await ActionService.get_all_actions(
         session,
@@ -135,8 +130,6 @@ async def get_action_by_id(
     Для администраторов и менеджеров - все акции,
     для пользователей - только активные.
     """
-    cache_key = f"actions:{current_user.role}"
-    cached_actions = await redis_cache.get_cached_data(cache_key)
 
     return await ActionService.get_action(session, action_id, current_user)
 

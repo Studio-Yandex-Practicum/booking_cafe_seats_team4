@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
+import redis
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -81,6 +82,7 @@ async def get_list_booking(
                  **BAD_RESPONSE},
              )
 async def create_booking(
+    redis_client: Annotated[redis.Redis, Depends(get_redis)],
     booking: BookingCreate,
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
@@ -97,11 +99,13 @@ async def create_booking(
         booking.booking_date,
         session,
     )
-    return await booking_crud.create_booking(
+    booking = await booking_crud.create_booking(
         booking,
         user.id,
         session,
     )
+    await redis_cache.delete_pattern("booking:*")
+    return booking
 
 
 @router.get('/{booking_id}', response_model=BookingInfo,
@@ -164,12 +168,12 @@ async def update_booking(
     slots_id = [slot.id for slot in booking.slots_id]
     tables_id = [table.id for table in booking.tables_id]
     await check_all_objects(
-            booking.cafe_id,
-            slots_id,
-            tables_id,
-            booking.booking_date,
-            session,
-            booking.id,
-        )
+        booking.cafe_id,
+        slots_id,
+        tables_id,
+        booking.booking_date,
+        session,
+        booking.id,
+    )
     await ban_change_status(booking, obj_in)
     return await booking_crud.update(booking, obj_in, session)
