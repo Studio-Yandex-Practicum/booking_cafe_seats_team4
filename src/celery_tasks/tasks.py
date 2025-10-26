@@ -137,7 +137,7 @@ def send_booking_notification(
                 x.start_time, '%H:%M'
             ))
         email_body = BOOKING_CONFIRMATION_TEMPLATE.format(
-            username='ddd',
+            username=user.email,
             booking_date=booking.booking_date,
             cafe=cafe.name,
             first_slot=earliest_slot.start_time,
@@ -159,12 +159,14 @@ def send_booking_notification(
             )
             booking.reminder_task_id = reminder_task.id
             session.commit()
+        table_ids = [str(table.id) for table in booking.tables_id]
+        tables = ', '.join(table_ids)
         email_body = BOOKING_INFORMATION_FOR_MANAGER.format(
             cafe=cafe.name,
             booking_date=booking.booking_date,
             first_slot=earliest_slot.start_time,
             last_slot=lastest_slot.end_time,
-            table=booking.tables_id
+            table=tables
         )
         for manager in managers:
             if manager.email:
