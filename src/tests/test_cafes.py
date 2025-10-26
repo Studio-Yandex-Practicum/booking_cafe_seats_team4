@@ -25,7 +25,7 @@ async def test_create_cafe_by_manager_success(client: AsyncClient, manager1_toke
 
 @pytest.mark.anyio
 async def test_create_cafe_by_user_forbidden(
-    client: AsyncClient, token_email: str
+    client: AsyncClient, token_email: str,
 ) -> None:
     """Обычный пользователь не может создавать кафе."""
     headers = {'Authorization': f'Bearer {token_email}'}
@@ -35,7 +35,7 @@ async def test_create_cafe_by_user_forbidden(
 
 @pytest.mark.anyio
 async def test_manager_cannot_appoint_admin(
-    client: AsyncClient, manager1_token: str, admin: dict
+    client: AsyncClient, manager1_token: str, admin: dict,
 ) -> None:
     """Менеджер не может назначить админа менеджером кафе."""
     headers = {'Authorization': f'Bearer {manager1_token}'}
@@ -49,7 +49,7 @@ async def test_manager_cannot_appoint_admin(
 
 @pytest.mark.anyio
 async def test_cannot_appoint_user_as_manager(
-    client: AsyncClient, admin_token: str, user_email: dict
+    client: AsyncClient, admin_token: str, user_email: dict,
 ) -> None:
     """Нельзя назначить обычного пользователя менеджером кафе (проверяем от имени админа)."""
     headers = {'Authorization': f'Bearer {admin_token}'}
@@ -63,7 +63,7 @@ async def test_cannot_appoint_user_as_manager(
 
 @pytest.mark.anyio
 async def test_update_own_cafe_by_manager_success(
-    client: AsyncClient, manager1_token: str, manager1: dict
+    client: AsyncClient, manager1_token: str, manager1: dict,
 ) -> None:
     """Менеджер может обновить информацию в своем кафе."""
     headers = {'Authorization': f'Bearer {manager1_token}'}
@@ -83,7 +83,7 @@ async def test_update_own_cafe_by_manager_success(
 
 @pytest.mark.anyio
 async def test_update_foreign_cafe_by_manager_forbidden(
-    client: AsyncClient, manager1_token: str, manager2_token: str, manager2: dict
+    client: AsyncClient, manager1_token: str, manager2_token: str, manager2: dict,
 ) -> None:
     """Менеджер не может обновить чужое кафе."""
     # 1. manager2 создает свое кафе

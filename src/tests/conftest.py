@@ -6,6 +6,13 @@ import pytest
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event, update
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.ext.asyncio import (AsyncConnection, AsyncEngine, AsyncSession,
                                     async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import Session as ORMSession
@@ -160,11 +167,11 @@ async def token_email(client: AsyncClient, user_email: Dict) -> str:
 
 @pytest.fixture
 async def admin(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: пользователь с правами ADMIN."""
     user_data = await _create_user(
-        client, username='admin', email='admin@a.com'
+        client, username='admin', email='admin@a.com',
     )
     async with sessionmaker() as session:
         stmt = (
@@ -179,11 +186,11 @@ async def admin(
 
 @pytest.fixture
 async def manager1(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: первый пользователь с правами MANAGER."""
     user_data = await _create_user(
-        client, username='manager1', email='m1@m.com'
+        client, username='manager1', email='m1@m.com',
     )
     async with sessionmaker() as session:
         stmt = (
@@ -198,11 +205,11 @@ async def manager1(
 
 @pytest.fixture
 async def manager2(
-    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession]
+    client: AsyncClient, sessionmaker: async_sessionmaker[AsyncSession],
 ) -> Dict:
     """Фикстура: второй пользователь с правами MANAGER."""
     user_data = await _create_user(
-        client, username='manager2', email='m2@m.com'
+        client, username='manager2', email='m2@m.com',
     )
     async with sessionmaker() as session:
         stmt = (

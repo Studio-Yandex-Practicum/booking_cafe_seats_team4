@@ -15,7 +15,6 @@ class RedisCache:
 
     async def init_redis(self) -> redis.Redis:
         """Инициализация Redis подключения."""
-
         try:
             self.redis = redis.from_url(
                 settings.REDIS_URL,
@@ -23,7 +22,7 @@ class RedisCache:
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_keepalive=True,
-                retry_on_timeout=True
+                retry_on_timeout=True,
             )
             await self.redis.ping()
             logger.info("Redis connection established")
@@ -34,21 +33,18 @@ class RedisCache:
 
     async def get_redis(self) -> redis.Redis:
         """Получение Redis клиента."""
-
         if self.redis is None:
             await self.init_redis()
         return self.redis
 
     async def close_redis(self):
         """Закрытие Redis подключения."""
-
         if self.redis:
             await self.redis.close()
             logger.info("Redis connection closed")
 
     async def get_cached_data(self, key: str) -> Optional[Any]:
         """Получение данных из кэша."""
-
         try:
             redis_client = await self.get_redis()
             cached = await redis_client.get(key)
@@ -62,13 +58,12 @@ class RedisCache:
 
     async def set_cached_data(self, key: str, data: Any, expire: int = 300):
         """Сохранение данных в кэш."""
-
         try:
             redis_client = await self.get_redis()
             await redis_client.setex(
                 key,
                 expire,
-                json.dumps(data, default=str)
+                json.dumps(data, default=str),
             )
         except Exception as e:
             logger.warning(
@@ -76,7 +71,6 @@ class RedisCache:
 
     async def delete_pattern(self, pattern: str):
         """Удаление ключей по шаблону."""
-
         try:
             redis_client = await self.get_redis()
             keys = await redis_client.keys(pattern)
@@ -94,5 +88,4 @@ redis_cache = RedisCache()
 
 async def get_redis() -> redis.Redis:
     """Зависимость для получения Redis клиента."""
-
     return await redis_cache.get_redis()

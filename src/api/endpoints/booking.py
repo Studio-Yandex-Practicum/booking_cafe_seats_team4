@@ -1,17 +1,26 @@
-from typing import Annotated, List, Optional
+from typing import List, Optional
 
-import redis
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import get_current_user, require_manager_or_admin
-from api.responses import (BAD_RESPONSE, FORBIDDEN_RESPONSE,
-                           NOT_FOUND_RESPONSE, UNAUTHORIZED_RESPONSE,
-                           VALIDATION_ERROR_RESPONSE)
-from api.validators.booking import (ban_change_status, booking_exists,
-                                    cafe_exists, check_all_objects_id,
-                                    check_booking_date, user_can_manage_cafe)
-from celery_tasks.tasks import send_booking_notification
+from api.deps import get_current_user
+from api.responses import (
+    BAD_RESPONSE,
+    FORBIDDEN_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    UNAUTHORIZED_RESPONSE,
+    VALIDATION_ERROR_RESPONSE,
+)
+from api.validators.booking import (
+    admin_or_manager_check,
+    ban_change_status,
+    booking_exists,
+    cafe_exists,
+    check_all_objects,
+    check_booking_date,
+    check_current_user_booking,
+    user_can_manage_cafe,
+)
 from core.db import get_session
 from core.redis import get_redis, redis_cache
 from core.decorators.redis import cache_response
@@ -50,10 +59,9 @@ async def get_list_booking(
 
     if cafe_id:
         await cafe_exists(cafe_id, session)
-    if not await require_manager_or_admin(user):
+    if not await admin_or_manager_check(user):
         return await booking_crud.get_multi_booking(
             session=session,
-            show_all=show_all,
             cafe_id=cafe_id,
             user_id=user.id,
         )
@@ -82,17 +90,18 @@ async def create_booking(
     Только для авторизированных пользователей.
     """
     await check_booking_date(booking.booking_date)
-    await check_all_objects_id(
+    await check_all_objects(
         booking.cafe_id,
         booking.slots_id,
         booking.tables_id,
         booking.booking_date,
         session,
     )
-    new_booking = await booking_crud.create_booking(booking, user.id, session)
-    send_booking_notification.delay(new_booking.id)
-    await redis_cache.delete_pattern("booking:*")
-    return new_booking
+    return await booking_crud.create_booking(
+        booking,
+        user.id,
+        session,
+    )
 
 
 @router.get('/{booking_id}', response_model=BookingInfo,
@@ -114,7 +123,7 @@ async def get_booking(
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
-    if not require_manager_or_admin(user):
+    if not await admin_or_manager_check(user):
         return await booking_crud.get_booking_current_user(
             booking_id,
             user,
@@ -143,26 +152,24 @@ async def update_booking(
     Для администраторов и менеджеров - доступны все бронирования,
     для обычных пользователей - только свои бронирования.
     """
-    if not await require_manager_or_admin(user):
-        await booking_crud.get_booking_current_user(
+    if not await admin_or_manager_check(user):
+        booking = await check_current_user_booking(
             booking_id,
             user,
             session,
         )
-
-    booking = await booking_exists(booking_id, session)
+    else:
+        booking = await booking_exists(booking_id, session)
+        await user_can_manage_cafe(user, booking.cafe_id, session)
     slots_id = [slot.id for slot in booking.slots_id]
     tables_id = [table.id for table in booking.tables_id]
-    await check_all_objects_id(
-        booking.cafe_id,
-        slots_id,
-        tables_id,
-        booking.booking_date,
-        session,
-    )
-    await user_can_manage_cafe(user, booking.cafe_id, session)
+    await check_all_objects(
+            booking.cafe_id,
+            slots_id,
+            tables_id,
+            booking.booking_date,
+            session,
+            booking.id,
+        )
     await ban_change_status(booking, obj_in)
-    update_booking = booking_crud.update(booking, obj_in, session)
-    send_booking_notification.delay(update_booking.id)
-    await redis_cache.delete_pattern("booking:*")
-    return update_booking
+    return await booking_crud.update(booking, obj_in, session)
